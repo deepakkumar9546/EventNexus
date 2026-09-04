@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- 
+    OWASP Dependency Check Suppressions
+    Add suppressions for false positives or accepted risks here
+    -->
+    
+    <!-- Example suppression for a specific CVE -->
+    <!--
+    <suppress>
+        <notes><![CDATA[
+        This CVE is not applicable to our use case because...
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.example/.*$</packageUrl>
+        <cve>CVE-2021-12345</cve>
+    </suppress>
+    -->
+</suppressions>

@@ -1,0 +1,264 @@
+version: '3.8'
+
+services:
+  # PostgreSQL databases for each service
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: auth_service
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+      - ./scripts/init-auth-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth_user -d auth_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  event-db:
+    image: postgres:15-alpine
+    container_name: event-db
+    environment:
+      POSTGRES_DB: event_service
+      POSTGRES_USER: event_user
+      POSTGRES_PASSWORD: event_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - event_db_data:/var/lib/postgresql/data
+      - ./scripts/init-event-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U event_user -d event_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ticket-db:
+    image: postgres:15-alpine
+    container_name: ticket-db
+    environment:
+      POSTGRES_DB: ticket_service
+      POSTGRES_USER: ticket_user
+      POSTGRES_PASSWORD: ticket_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - ticket_db_data:/var/lib/postgresql/data
+      - ./scripts/init-ticket-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticket_user -d ticket_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  payment-db:
+    image: postgres:15-alpine
+    container_name: payment-db
+    environment:
+      POSTGRES_DB: payment_service
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - payment_db_data:/var/lib/postgresql/data
+      - ./scripts/init-payment-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-db:
+    image: postgres:15-alpine
+    container_name: notification-db
+    environment:
+      POSTGRES_DB: notification_service
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_password
+    ports:
+      - "5436:5432"
+    volumes:
+      - notification_db_data:/var/lib/postgresql/data
+      - ./scripts/init-notification-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - event-booking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notification_user -d notification_service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - event-booking-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application services
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8091:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-db:5432/auth_service
+      SPRING_DATASOURCE_USERNAME: auth_user
+      SPRING_DATASOURCE_PASSWORD: auth_password
+      SPRING_REDIS_HOST: redis-cache
+      SPRING_REDIS_PORT: 6379
+      EVENT_SERVICE_URL: http://event-service:8080
+      TICKET_SERVICE_URL: http://ticket-service:8080
+      PAYMENT_SERVICE_URL: http://payment-service:8080
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - event-booking-network
+    restart: unless-stopped
+
+  event-service:
+    build:
+      context: ./event-service
+      dockerfile: Dockerfile
+    container_name: event-service
+    ports:
+      - "8092:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://event-db:5432/event_service
+      SPRING_DATASOURCE_USERNAME: event_user
+      SPRING_DATASOURCE_PASSWORD: event_password
+      SPRING_REDIS_HOST: redis-cache
+      SPRING_REDIS_PORT: 6379
+      AUTH_SERVICE_URL: http://auth-service:8080
+    depends_on:
+      event-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - event-booking-network
+    restart: unless-stopped
+
+  ticket-service:
+    build:
+      context: ./ticket-service
+      dockerfile: Dockerfile
+    container_name: ticket-service
+    ports:
+      - "8093:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-db:5432/ticket_service
+      SPRING_DATASOURCE_USERNAME: ticket_user
+      SPRING_DATASOURCE_PASSWORD: ticket_password
+      SPRING_REDIS_HOST: redis-cache
+      SPRING_REDIS_PORT: 6379
+      AUTH_SERVICE_URL: http://auth-service:8080
+      EVENT_SERVICE_URL: http://event-service:8080
+    depends_on:
+      ticket-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      event-service:
+        condition: service_started
+    networks:
+      - event-booking-network
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8094:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://payment-db:5432/payment_service
+      SPRING_DATASOURCE_USERNAME: payment_user
+      SPRING_DATASOURCE_PASSWORD: payment_password
+      AUTH_SERVICE_URL: http://auth-service:8080
+      TICKET_SERVICE_URL: http://ticket-service:8080
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      ticket-service:
+        condition: service_started
+    networks:
+      - event-booking-network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    ports:
+      - "8095:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://notification-db:5432/notification_service
+      SPRING_DATASOURCE_USERNAME: notification_user
+      SPRING_DATASOURCE_PASSWORD: notification_password
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-your-email@gmail.com}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-your-app-password}
+    depends_on:
+      notification-db:
+        condition: service_healthy
+    networks:
+      - event-booking-network
+    restart: unless-stopped
+
+volumes:
+  auth_db_data:
+  event_db_data:
+  ticket_db_data:
+  payment_db_data:
+  notification_db_data:
+  redis_data:
+
+networks:
+  event-booking-network:
+    driver: bridge

@@ -1,0 +1,130 @@
+# Docker Compose override for development environment
+# This file is automatically loaded by docker-compose and provides development-specific configurations
+
+version: '3.8'
+
+services:
+  # Development database configurations with exposed ports for direct access
+  auth-db:
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: auth_service
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    volumes:
+      - ./scripts/init-auth-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  event-db:
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: event_service
+      POSTGRES_USER: event_user
+      POSTGRES_PASSWORD: event_password
+    volumes:
+      - ./scripts/init-event-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  ticket-db:
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: ticket_service
+      POSTGRES_USER: ticket_user
+      POSTGRES_PASSWORD: ticket_password
+    volumes:
+      - ./scripts/init-ticket-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  payment-db:
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: payment_service
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_password
+    volumes:
+      - ./scripts/init-payment-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  notification-db:
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_DB: notification_service
+      POSTGRES_USER: notification_user
+      POSTGRES_PASSWORD: notification_password
+    volumes:
+      - ./scripts/init-notification-db.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Redis with development configuration
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # Application services with development configurations
+  auth-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
+      SPRING_JPA_SHOW_SQL: "true"
+    volumes:
+      - ./logs:/app/logs
+
+  event-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
+      SPRING_JPA_SHOW_SQL: "true"
+    volumes:
+      - ./logs:/app/logs
+
+  ticket-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
+      SPRING_JPA_SHOW_SQL: "true"
+    volumes:
+      - ./logs:/app/logs
+
+  payment-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
+      SPRING_JPA_SHOW_SQL: "true"
+    volumes:
+      - ./logs:/app/logs
+
+  notification-service:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      LOGGING_LEVEL_COM_EVENTBOOKING: DEBUG
+      SPRING_JPA_SHOW_SQL: "true"
+    volumes:
+      - ./logs:/app/logs
+
+  # Development tools
+  adminer:
+    image: adminer:4.8.1
+    container_name: adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - event-booking-network
+    depends_on:
+      - auth-db
+      - event-db
+      - ticket-db
+      - payment-db
+      - notification-db
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    networks:
+      - event-booking-network
+    depends_on:
+      - redis

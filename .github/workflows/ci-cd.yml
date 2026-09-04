@@ -1,0 +1,161 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  JAVA_VERSION: '17'
+  MAVEN_VERSION: '3.9.4'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: Run tests
+      run: mvn clean test
+      env:
+        SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/test_db
+        SPRING_DATASOURCE_USERNAME: postgres
+        SPRING_DATASOURCE_PASSWORD: postgres
+        SPRING_REDIS_HOST: localhost
+        SPRING_REDIS_PORT: 6379
+    
+    - name: Run security scan with OWASP Dependency Check
+      run: mvn org.owasp:dependency-check-maven:check
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          **/target/surefire-reports/
+          **/target/dependency-check-report.html
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+    
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
+    
+    - name: Build Docker images
+      run: |
+        docker build -t event-booking/auth-service:${{ github.sha }} ./auth-service
+        docker build -t event-booking/event-service:${{ github.sha }} ./event-service
+        docker build -t event-booking/ticket-service:${{ github.sha }} ./ticket-service
+        docker build -t event-booking/payment-service:${{ github.sha }} ./payment-service
+        docker build -t event-booking/notification-service:${{ github.sha }} ./notification-service
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+    
+    - name: Push images to ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY_PREFIX: event-booking
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        docker tag event-booking/auth-service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/auth-service:$IMAGE_TAG
+        docker tag event-booking/event-service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/event-service:$IMAGE_TAG
+        docker tag event-booking/ticket-service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/ticket-service:$IMAGE_TAG
+        docker tag event-booking/payment-service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/payment-service:$IMAGE_TAG
+        docker tag event-booking/notification-service:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/notification-service:$IMAGE_TAG
+        
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/auth-service:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/event-service:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/ticket-service:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/payment-service:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY_PREFIX/notification-service:$IMAGE_TAG
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+    
+    - name: Deploy to ECS
+      run: |
+        # Update ECS service with new image
+        aws ecs update-service --cluster event-booking-cluster --service auth-service --force-new-deployment
+        aws ecs update-service --cluster event-booking-cluster --service event-service --force-new-deployment
+        aws ecs update-service --cluster event-booking-cluster --service ticket-service --force-new-deployment
+        aws ecs update-service --cluster event-booking-cluster --service payment-service --force-new-deployment
+        aws ecs update-service --cluster event-booking-cluster --service notification-service --force-new-deployment

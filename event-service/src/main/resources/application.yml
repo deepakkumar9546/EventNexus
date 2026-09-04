@@ -1,0 +1,152 @@
+server:
+  port: 8080
+  # HTTPS configuration (uncomment for production)
+  # ssl:
+  #   enabled: true
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: ${SSL_KEY_STORE_PASSWORD}
+  #   key-store-type: PKCS12
+  #   key-alias: eventbooking
+  # Enforce HTTPS in production
+  forward-headers-strategy: framework
+  # Security settings
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+  # Compression
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
+
+spring:
+  application:
+    name: event-service
+  config:
+    import: optional:classpath:application-monitoring.yml
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5433/event_service
+    username: event_user
+    password: event_password
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: ${SPRING_REDIS_PORT:6379}
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+
+logging:
+  level:
+    com.eventbooking: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+service:
+  auth:
+    secret: ${SERVICE_AUTH_SECRET:defaultServiceSecret123456789012345678901234567890}
+
+services:
+  auth:
+    url: ${AUTH_SERVICE_URL:http://localhost:8080}
+  ticket:
+    url: ${TICKET_SERVICE_URL:http://localhost:8082}
+  payment:
+    url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+  notification:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      authService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+      ticketService:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 40
+  
+  retry:
+    instances:
+      authService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+      ticketService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+aws:
+  region: ${AWS_REGION:us-east-1}
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  s3:
+    bucket-name: ${AWS_S3_BUCKET:event-images-bucket}
+  cloudfront:
+    domain: ${AWS_CLOUDFRONT_DOMAIN:}
+  sqs:
+    endpoint: ${AWS_SQS_ENDPOINT:}
+  sns:
+    endpoint: ${AWS_SNS_ENDPOINT:}
+    event-management-topic: ${AWS_SNS_EVENT_MANAGEMENT_TOPIC:arn:aws:sns:us-east-1:000000000000:event-management-events}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  
+  datasource:
+    url: jdbc:postgresql://event-db:5432/event_service
+  
+  redis:
+    host: ${SPRING_REDIS_HOST:redis-cache}
+    port: ${SPRING_REDIS_PORT:6379}
+
+services:
+  auth:
+    url: http://auth-service:8080
+  ticket:
+    url: http://ticket-service:8082
+  payment:
+    url: http://payment-service:8083
+  notification:
+    url: http://notification-service:8084
