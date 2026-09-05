@@ -42,15 +42,16 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
   
-  redis:
-    host: ${SPRING_REDIS_HOST:localhost}
-    port: ${SPRING_REDIS_PORT:6379}
-    timeout: 2000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:localhost}
+      port: ${SPRING_REDIS_PORT:6379}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
 logging:
   level:
@@ -119,6 +120,7 @@ aws:
   access-key-id: ${AWS_ACCESS_KEY_ID:}
   secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
   s3:
+    region: ${AWS_REGION:us-east-1}
     bucket-name: ${AWS_S3_BUCKET:event-images-bucket}
   cloudfront:
     domain: ${AWS_CLOUDFRONT_DOMAIN:}
@@ -137,9 +139,10 @@ spring:
   datasource:
     url: jdbc:postgresql://event-db:5432/event_service
   
-  redis:
-    host: ${SPRING_REDIS_HOST:redis-cache}
-    port: ${SPRING_REDIS_PORT:6379}
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:redis-cache}
+      port: ${SPRING_REDIS_PORT:6379}
 
 services:
   auth:

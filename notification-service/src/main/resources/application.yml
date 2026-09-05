@@ -68,8 +68,12 @@ aws:
     ticket-events-queue: ${AWS_SQS_TICKET_EVENTS_QUEUE:ticket-events-queue}
     payment-events-dlq: ${AWS_SQS_PAYMENT_EVENTS_DLQ:payment-events-dlq}
     ticket-events-dlq: ${AWS_SQS_TICKET_EVENTS_DLQ:ticket-events-dlq}
+    queue-url: ${AWS_SQS_QUEUE_URL:}
+    region: ${AWS_REGION:us-east-1}
   sns:
     endpoint: ${AWS_SNS_ENDPOINT:}
+  ses:
+    region: ${AWS_REGION:us-east-1}
 
 management:
   endpoints:
@@ -79,17 +83,14 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+  health:
+    mail:
+      enabled: false
   metrics:
     export:
       prometheus:
         enabled: true
-
-aws:
-  sqs:
-    queue-url: ${AWS_SQS_QUEUE_URL:}
-    region: ${AWS_REGION:us-east-1}
-  ses:
-    region: ${AWS_REGION:us-east-1}
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:3000}
@@ -159,6 +160,12 @@ spring:
   
   datasource:
     url: jdbc:postgresql://notification-db:5432/notification_service
+
+
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:redis-cache}
+      port: ${SPRING_REDIS_PORT:6379}
 
 services:
   auth:

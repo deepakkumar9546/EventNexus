@@ -1,10 +1,6 @@
 -- Create notification_service database and user
-CREATE DATABASE notification_service;
-CREATE USER notification_user WITH ENCRYPTED PASSWORD 'notification_password';
-GRANT ALL PRIVILEGES ON DATABASE notification_service TO notification_user;
 
 -- Connect to notification_service database
-\c notification_service;
 
 -- Grant schema privileges
 GRANT ALL ON SCHEMA public TO notification_user;

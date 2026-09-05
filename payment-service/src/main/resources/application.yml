@@ -142,6 +142,11 @@ spring:
   datasource:
     url: jdbc:postgresql://payment-db:5432/payment_service
 
+  data:
+    redis:
+      host: ${SPRING_REDIS_HOST:redis-cache}
+      port: ${SPRING_REDIS_PORT:6379}
+
 services:
   auth:
     url: http://auth-service:8080
