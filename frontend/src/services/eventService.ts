@@ -15,6 +15,16 @@ export interface Event {
   updatedAt: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  iconUrl?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
 export interface TicketType {
   id: string;
   eventId: string;
@@ -58,7 +68,7 @@ export const eventService = {
   // Get all events with optional filters
   async getEvents(criteria: SearchCriteria = {}): Promise<EventSearchResponse> {
     const params = new URLSearchParams();
-    
+
     if (criteria.query) params.append('query', criteria.query);
     if (criteria.category) params.append('category', criteria.category);
     if (criteria.city) params.append('city', criteria.city);
@@ -70,8 +80,9 @@ export const eventService = {
 
     const queryString = params.toString();
     const endpoint = queryString ? `/events?${queryString}` : '/events';
-    
-    return apiRequest<EventSearchResponse>(endpoint);
+
+    const response = await apiRequest<{ data: EventSearchResponse }>(endpoint);
+    return response.data;
   },
 
   // Search events with criteria
@@ -98,7 +109,8 @@ export const eventService = {
   },
 
   // Get all categories
-  async getCategories(): Promise<string[]> {
-    return apiRequest<string[]>('/events/categories');
+  async getCategories(): Promise<Category[]> {
+    const response = await apiRequest<{ data: Category[] }>('/categories');
+    return response.data;
   },
 };

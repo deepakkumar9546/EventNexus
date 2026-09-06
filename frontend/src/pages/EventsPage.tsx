@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { eventService, type Category } from '../services/eventService';
 import {
   fetchEventsStart,
   fetchEventsSuccess,
@@ -11,7 +12,6 @@ import {
   setSuggestions,
   clearSuggestions,
 } from '../store/slices/eventSlice';
-import { eventService } from '../services/eventService';
 import type { RootState } from '../store/store';
 
 const EventsPage = () => {
@@ -27,7 +27,7 @@ const EventsPage = () => {
   const [localEndDate, setLocalEndDate] = useState(filters.endDate || '');
   const [localSortBy, setLocalSortBy] = useState(filters.sortBy || 'date');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Load categories on mount
@@ -198,8 +198,8 @@ const EventsPage = () => {
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
                 </option>
               ))}
             </select>

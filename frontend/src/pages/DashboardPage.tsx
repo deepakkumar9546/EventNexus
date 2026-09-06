@@ -7,15 +7,25 @@ import type { RootState } from '../store/store';
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state: RootState) => state.auth);
-  const { orders, loading, error, pagination } = useAppSelector((state: RootState) => state.order);
+  const { orders: orderList, loading, error, pagination } = useAppSelector(
+    (state: RootState) => state.order
+  );
+
+  const orders = orderList ?? [];
 
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'past'>('all');
 
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchUserOrders({ userId: user.id, page: pagination.page, size: pagination.size }));
+      dispatch(
+        fetchUserOrders({
+          userId: user.id,
+          page: pagination.page,
+          size: pagination.size,
+        })
+      );
     }
-  }, [user?.id, pagination.page, dispatch]);
+  }, [user?.id, pagination.page, pagination.size, dispatch]);
 
   const handlePageChange = (newPage: number) => {
     dispatch(setPage(newPage));
@@ -49,7 +59,10 @@ const DashboardPage = () => {
 
   const getTotalTickets = () => {
     return orders.reduce((total, order) => {
-      return total + order.orderItems.reduce((sum, item) => sum + item.quantity, 0);
+      return total + (order.orderItems ?? []).reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      );
     }, 0);
   };
 
@@ -199,7 +212,7 @@ const DashboardPage = () => {
                 </div>
 
                 <div className="space-y-2 mb-3">
-                  {order.orderItems.map((item) => (
+                  {(order.orderItems ?? []).map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="text-gray-700">
                         {item.quantity} × Ticket (${item.unitPrice.toFixed(2)})

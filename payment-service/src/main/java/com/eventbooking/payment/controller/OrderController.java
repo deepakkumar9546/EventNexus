@@ -61,9 +61,9 @@ public class OrderController {
     
     @GetMapping("/user/{userId}")
     public ResponseEntity<ApiResponse<Page<OrderDto>>> getUserOrders(
-            @PathVariable UUID userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable("userId") UUID userId,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size) {
         log.info("Fetching orders for user: {}", userId);
         
         Pageable pageable = PageRequest.of(page, size);

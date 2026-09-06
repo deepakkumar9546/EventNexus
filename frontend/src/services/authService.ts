@@ -15,7 +15,9 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
   user: {
     id: string;
     email: string;
@@ -47,11 +49,13 @@ export const authService = {
   },
 
   login: async (data: LoginRequest): Promise<LoginResponse> => {
-    return apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
+  const response = await apiRequest<{ data: LoginResponse }>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+    return response.data;
+},
 
   verifyEmail: async (data: VerifyEmailRequest): Promise<{ message: string }> => {
     return apiRequest('/auth/verify-email', {
