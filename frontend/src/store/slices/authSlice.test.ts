@@ -7,7 +7,6 @@ import authReducer, {
   clearSuccessMessage,
   setToken,
 } from './authSlice';
-import { authService } from '../../services/authService';
 
 vi.mock('../../services/authService');
 
@@ -88,8 +87,10 @@ describe('authSlice', () => {
     });
 
     it('should handle fulfilled state', () => {
-      const payload = {
-        token: 'test-token',
+     const payload ={
+        accessToken: 'test-token',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
         user: {
           id: '1',
           email: 'test@example.com',
@@ -106,7 +107,7 @@ describe('authSlice', () => {
       expect(newState.loading).toBe(false);
       expect(newState.isAuthenticated).toBe(true);
       expect(newState.user).toEqual(payload.user);
-      expect(newState.token).toBe(payload.token);
+      expect(newState.token).toBe(payload.accessToken);
     });
 
     it('should handle rejected state', () => {

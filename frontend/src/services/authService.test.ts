@@ -35,15 +35,20 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should call apiRequest with correct parameters', async () => {
       const mockResponse = {
-        token: 'mock-token',
-        user: {
-          id: '1',
-          email: 'test@example.com',
-          firstName: 'John',
-          lastName: 'Doe',
-          emailVerified: true,
-        },
-      };
+        data: {
+          accessToken: 'mock-token',
+          tokenType: 'Bearer',
+          expiresIn: 3600,
+          user: {
+            id: '1',
+            email: 'test@example.com',
+            firstName: 'John',
+            lastName: 'Doe',
+            emailVerified: true,
+    },
+  },
+};
+
       vi.spyOn(api, 'apiRequest').mockResolvedValue(mockResponse);
 
       const loginData = {
@@ -58,7 +63,7 @@ describe('AuthService', () => {
         method: 'POST',
         body: JSON.stringify(loginData),
       });
-      expect(result).toEqual(mockResponse);
+      expect(result).toEqual(mockResponse.data);
     });
   });
 

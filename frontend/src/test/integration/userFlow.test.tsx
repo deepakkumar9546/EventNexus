@@ -55,6 +55,7 @@ describe('User Authentication Flow', () => {
           email: 'john@example.com',
           dateOfBirth: '1990-01-01',
           password: 'ValidPass123!',
+          confirmPassword: 'ValidPass123!',
         });
       });
     });
@@ -65,8 +66,10 @@ describe('User Authentication Flow', () => {
       const user = userEvent.setup();
       
       // Mock successful login
-      const mockLoginResponse = {
-        token: 'mock-jwt-token',
+     const mockLoginResponse ={
+        accessToken: 'mock-jwt-token',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
         user: {
           id: '1',
           email: 'john@example.com',
@@ -100,7 +103,9 @@ describe('User Authentication Flow', () => {
       const user = userEvent.setup();
       
       vi.mocked(authService.login).mockResolvedValue({
-        token: 'mock-jwt-token',
+        accessToken: 'mock-jwt-token',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
         user: {
           id: '1',
           email: 'john@example.com',
@@ -135,7 +140,9 @@ describe('User Authentication Flow', () => {
       
       // Mock login
       vi.mocked(authService.login).mockResolvedValue({
-        token: 'mock-jwt-token',
+        accessToken: 'mock-jwt-token',
+        tokenType: 'Bearer',
+        expiresIn: 3600,
         user: {
           id: '1',
           email: 'test@example.com',
