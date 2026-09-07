@@ -26,6 +26,9 @@ const CheckoutPage = () => {
 
   const checkoutData = location.state as CheckoutState;
 
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal'>('card');
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
@@ -39,6 +42,14 @@ const CheckoutPage = () => {
       navigate('/events');
     }
   }, [checkoutData, navigate]);
+
+  useEffect(() => {
+  if (user) {
+    setEmail(user.email || '');
+    setFirstName(user.firstName || '');
+    setLastName(user.lastName || '');
+  }
+}, [user]);
 
   useEffect(() => {
     if (successMessage && currentOrder) {
@@ -211,9 +222,9 @@ const CheckoutPage = () => {
                     </label>
                     <input
                       type="email"
-                      value={user?.email || ''}
-                      disabled
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -223,9 +234,9 @@ const CheckoutPage = () => {
                       </label>
                       <input
                         type="text"
-                        value={user?.firstName || ''}
-                        disabled
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
                       />
                     </div>
                     <div>
@@ -234,9 +245,9 @@ const CheckoutPage = () => {
                       </label>
                       <input
                         type="text"
-                        value={user?.lastName || ''}
-                        disabled
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white"
                       />
                     </div>
                   </div>
