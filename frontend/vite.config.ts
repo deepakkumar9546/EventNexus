@@ -27,6 +27,10 @@ export default defineConfig({
         target: 'http://localhost:8092',
         changeOrigin: true,
       },
+      '/api/ticket-types': {
+        target: 'http://localhost:8093',
+        changeOrigin: true,
+      },
     },
   },
 })

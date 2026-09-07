@@ -50,14 +50,14 @@ public class EventController {
     }
     
     @GetMapping("/{eventId}")
-    public ResponseEntity<ApiResponse<EventDto>> getEvent(@PathVariable UUID eventId) {
+    public ResponseEntity<ApiResponse<EventDto>> getEvent(@PathVariable("eventId") UUID eventId) {
         EventDto event = eventService.getEventById(eventId);
         return ResponseEntity.ok(ApiResponse.success(event));
     }
     
     @PutMapping("/{eventId}")
     public ResponseEntity<ApiResponse<EventDto>> updateEvent(
-            @PathVariable UUID eventId,
+            @PathVariable("eventId") UUID eventId,
             @Valid @RequestBody UpdateEventRequest request,
             @RequestHeader("Authorization") String authHeader) {
         
@@ -69,7 +69,7 @@ public class EventController {
     
     @DeleteMapping("/{eventId}")
     public ResponseEntity<ApiResponse<Void>> deleteEvent(
-            @PathVariable UUID eventId,
+            @PathVariable("eventId") UUID eventId,
             @RequestHeader("Authorization") String authHeader) {
         
         UUID organizerId = extractUserIdFromToken(authHeader);
@@ -103,7 +103,7 @@ public class EventController {
     
     @PostMapping("/{eventId}/publish")
     public ResponseEntity<ApiResponse<EventDto>> publishEvent(
-            @PathVariable UUID eventId,
+            @PathVariable("eventId") UUID eventId,
             @RequestHeader("Authorization") String authHeader) {
         
         UUID organizerId = extractUserIdFromToken(authHeader);
@@ -114,7 +114,7 @@ public class EventController {
     
     @PostMapping("/{eventId}/cancel")
     public ResponseEntity<ApiResponse<EventDto>> cancelEvent(
-            @PathVariable UUID eventId,
+            @PathVariable("eventId") UUID eventId,
             @RequestHeader("Authorization") String authHeader) {
         
         UUID organizerId = extractUserIdFromToken(authHeader);
@@ -125,7 +125,7 @@ public class EventController {
     
     @PostMapping(value = "/{eventId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ImageUploadResponse>> uploadEventImage(
-            @PathVariable UUID eventId,
+            @PathVariable("eventId") UUID eventId,
             @RequestParam("image") MultipartFile image,
             @RequestHeader("Authorization") String authHeader) throws IOException {
         
@@ -152,7 +152,7 @@ public class EventController {
     
     @DeleteMapping("/{eventId}/image")
     public ResponseEntity<ApiResponse<EventDto>> deleteEventImage(
-            @PathVariable UUID eventId,
+            @PathVariable("eventId") UUID eventId,
             @RequestHeader("Authorization") String authHeader) {
         
         UUID organizerId = extractUserIdFromToken(authHeader);

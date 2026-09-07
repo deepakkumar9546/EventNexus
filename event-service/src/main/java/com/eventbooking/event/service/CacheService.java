@@ -1,6 +1,6 @@
 package com.eventbooking.event.service;
 
-import com.eventbooking.event.entity.Event;
+import com.eventbooking.event.dto.EventDto;
 import org.springframework.data.domain.Page;
 
 import java.util.Optional;
@@ -8,9 +8,9 @@ import java.util.UUID;
 
 public interface CacheService {
     
-    void cacheEvent(Event event);
-    
-    Optional<Event> getCachedEvent(UUID eventId);
+    void cacheEvent(EventDto event);
+
+    Optional<EventDto> getCachedEvent(UUID eventId);
     
     void evictEvent(UUID eventId);
     

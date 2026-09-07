@@ -1,13 +1,28 @@
 import { apiRequest } from './api';
 
+export interface Venue {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  latitude?: number;
+  longitude?: number;
+  maxCapacity?: number;
+  venueType?: string;
+  createdAt?: string;
+}
+
+
 export interface Event {
   id: string;
   name: string;
   description: string;
   eventDate: string;
-  venueName: string;
-  venueAddress: string;
-  category: string;
+  venue: Venue;
+  category: Category;
   imageUrl?: string;
   status: string;
   organizerId: string;
@@ -87,11 +102,12 @@ export const eventService = {
 
   // Search events with criteria
   async searchEvents(criteria: SearchCriteria): Promise<EventSearchResponse> {
-    return apiRequest<EventSearchResponse>('/events/search', {
-      method: 'POST',
-      body: JSON.stringify(criteria),
-    });
-  },
+  const response = await apiRequest<{ data: EventSearchResponse }>('/events/search', {
+    method: 'POST',
+    body: JSON.stringify(criteria),
+  });
+  return response.data;
+},
 
   // Get search suggestions
   async getSearchSuggestions(query: string): Promise<SearchSuggestion[]> {
@@ -100,14 +116,17 @@ export const eventService = {
 
   // Get event by ID
   async getEventById(id: string): Promise<Event> {
-    return apiRequest<Event>(`/events/${id}`);
-  },
+    const response = await apiRequest<{ data: Event }>(`/events/${id}`);
+    return response.data;
+},
 
   // Get ticket types for an event
   async getTicketTypes(eventId: string): Promise<TicketType[]> {
-    return apiRequest<TicketType[]>(`/tickets/availability/${eventId}`);
-  },
-
+    const response = await apiRequest<{ data: TicketType[] }>(
+    `/ticket-types/event/${eventId}/available`
+  );
+    return response.data;
+},
   // Get all categories
   async getCategories(): Promise<Category[]> {
     const response = await apiRequest<{ data: Category[] }>('/categories');

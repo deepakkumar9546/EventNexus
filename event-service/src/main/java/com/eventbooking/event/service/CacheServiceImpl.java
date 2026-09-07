@@ -1,6 +1,6 @@
 package com.eventbooking.event.service;
 
-import com.eventbooking.event.entity.Event;
+import com.eventbooking.event.dto.EventDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -28,15 +28,15 @@ public class CacheServiceImpl implements CacheService {
     }
     
     @Override
-    public void cacheEvent(Event event) {
+    public void cacheEvent(EventDto event) {
         String key = EVENT_CACHE_KEY + event.getId();
         redisTemplate.opsForValue().set(key, event, EVENT_CACHE_TTL);
-    }
+}
     
     @Override
-    public Optional<Event> getCachedEvent(UUID eventId) {
+    public Optional<EventDto> getCachedEvent(UUID eventId) {
         String key = EVENT_CACHE_KEY + eventId;
-        Event event = (Event) redisTemplate.opsForValue().get(key);
+        EventDto event = (EventDto) redisTemplate.opsForValue().get(key);
         return Optional.ofNullable(event);
     }
     

@@ -87,14 +87,14 @@ public class EventServiceImpl implements EventService {
         Event savedEvent = eventRepository.save(event);
 
         // Cache the event
-        cacheService.cacheEvent(savedEvent);
+        cacheService.cacheEvent(eventMapper.toDto(savedEvent));
 
         return eventMapper.toDto(savedEvent);
     }
     
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "events", key = "#eventId", unless = "#result == null")
+    @Cacheable(value = "events", key = "#p0", unless = "#result == null")
     public EventDto getEventById(UUID eventId) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new EventNotFoundException(eventId));
@@ -103,7 +103,7 @@ public class EventServiceImpl implements EventService {
     }
     
     @Override
-    @CachePut(value = "events", key = "#eventId")
+    @CachePut(value = "events", key = "#p0")
     @CacheEvict(value = "searchResults", allEntries = true)
     public EventDto updateEvent(UUID eventId, UpdateEventRequest request, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
@@ -150,7 +150,7 @@ public class EventServiceImpl implements EventService {
     }
     
     @Override
-    @CacheEvict(value = {"events", "searchResults"}, key = "#eventId", allEntries = true)
+    @CacheEvict(value = {"events", "searchResults"}, allEntries = true)
     public void deleteEvent(UUID eventId, UUID organizerId) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new EventNotFoundException(eventId));
@@ -208,7 +208,7 @@ public class EventServiceImpl implements EventService {
         Event savedEvent = eventRepository.save(event);
         
         // Update cache
-        cacheService.cacheEvent(savedEvent);
+        cacheService.cacheEvent(eventMapper.toDto(savedEvent));
         
         // TODO: Publish event to SNS for notifications
         
@@ -229,7 +229,7 @@ public class EventServiceImpl implements EventService {
         Event savedEvent = eventRepository.save(event);
         
         // Update cache
-        cacheService.cacheEvent(savedEvent);
+        cacheService.cacheEvent(eventMapper.toDto(savedEvent));
         
         // TODO: Publish cancellation event to SNS for notifications
         
@@ -250,7 +250,7 @@ public class EventServiceImpl implements EventService {
         Event savedEvent = eventRepository.save(event);
         
         // Update cache
-        cacheService.cacheEvent(savedEvent);
+        cacheService.cacheEvent(eventMapper.toDto(savedEvent));
         
         return eventMapper.toDto(savedEvent);
     }

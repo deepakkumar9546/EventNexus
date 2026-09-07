@@ -304,7 +304,7 @@ const EventsPage = () => {
                     </div>
                   )}
                   <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-semibold text-gray-700">
-                    {event.category}
+                    {event.category?.name}
                   </div>
                 </div>
                 <div className="p-4">

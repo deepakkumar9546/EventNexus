@@ -49,6 +49,7 @@ const eventSlice = createSlice({
       state.loading = true
       state.error = null
     },
+
     fetchEventsSuccess: (state, action: PayloadAction<{
       events: Event[]
       totalPages: number
@@ -61,31 +62,45 @@ const eventSlice = createSlice({
       state.pagination.totalElements = action.payload.totalElements
       state.pagination.page = action.payload.page
     },
+
     fetchEventsFailure: (state, action: PayloadAction<string>) => {
       state.loading = false
       state.error = action.payload
     },
+
+    fetchEventDetailsSuccess: (state) => {
+      state.loading = false
+      state.error = null
+    },
+
     setSelectedEvent: (state, action: PayloadAction<Event | null>) => {
       state.selectedEvent = action.payload
     },
+
     setTicketTypes: (state, action: PayloadAction<TicketType[]>) => {
       state.ticketTypes = action.payload
     },
+
     setSuggestions: (state, action: PayloadAction<SearchSuggestion[]>) => {
       state.suggestions = action.payload
     },
+
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload
     },
+
     setFilters: (state, action: PayloadAction<EventState['filters']>) => {
       state.filters = action.payload
     },
+
     setPage: (state, action: PayloadAction<number>) => {
       state.pagination.page = action.payload
     },
+
     clearError: (state) => {
       state.error = null
     },
+
     clearSuggestions: (state) => {
       state.suggestions = []
     },
@@ -96,6 +111,7 @@ export const {
   fetchEventsStart,
   fetchEventsSuccess,
   fetchEventsFailure,
+  fetchEventDetailsSuccess,
   setSelectedEvent,
   setTicketTypes,
   setSuggestions,
@@ -105,4 +121,5 @@ export const {
   clearError,
   clearSuggestions,
 } = eventSlice.actions
+
 export default eventSlice.reducer

@@ -6,6 +6,7 @@ import {
   fetchEventsFailure,
   setSelectedEvent,
   setTicketTypes,
+  fetchEventDetailsSuccess,
 } from '../store/slices/eventSlice';
 import { eventService, TicketType } from '../services/eventService';
 import type { RootState } from '../store/store';
@@ -30,6 +31,7 @@ const EventDetailsPage = () => {
 
         const tickets = await eventService.getTicketTypes(id);
         dispatch(setTicketTypes(tickets));
+        dispatch(fetchEventDetailsSuccess());
       } catch (err: any) {
         dispatch(fetchEventsFailure(err.message || 'Failed to load event details'));
       }
@@ -86,9 +88,9 @@ const EventDetailsPage = () => {
         eventId: selectedEvent.id,
         eventName: selectedEvent.name,
         eventDate: selectedEvent.eventDate,
-        venueName: selectedEvent.venueName,
+        venueName: selectedEvent.venue?.name,
         selectedTickets: selectedTicketsList,
-      },
+},
     });
   };
 
@@ -168,7 +170,7 @@ const EventDetailsPage = () => {
             </div>
           )}
           <div className="absolute top-4 right-4 bg-white px-3 py-1 rounded-lg text-sm font-semibold text-gray-700">
-            {selectedEvent.category}
+            {selectedEvent.category?.name}
           </div>
         </div>
 
@@ -194,15 +196,15 @@ const EventDetailsPage = () => {
                     <span className="text-2xl">📍</span>
                     <div>
                       <p className="font-semibold">Venue</p>
-                      <p>{selectedEvent.venueName}</p>
-                      <p className="text-sm text-gray-600">{selectedEvent.venueAddress}</p>
+                      <p>{selectedEvent.venue?.name}</p>
+                      <p className="text-sm text-gray-600">{selectedEvent.venue?.address}</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">🎭</span>
                     <div>
                       <p className="font-semibold">Category</p>
-                      <p>{selectedEvent.category}</p>
+                      <p>{selectedEvent.category?.name}</p>
                     </div>
                   </div>
                 </div>

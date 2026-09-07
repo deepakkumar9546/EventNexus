@@ -38,7 +38,7 @@ public class TicketController {
     }
     
     @GetMapping("/{ticketId}")
-    public ResponseEntity<ApiResponse<TicketDto>> getTicket(@PathVariable UUID ticketId) {
+    public ResponseEntity<ApiResponse<TicketDto>> getTicket(@PathVariable("ticketId") UUID ticketId) {
         logger.debug("Received request to get ticket: {}", ticketId);
         
         TicketDto ticket = ticketService.getTicketById(ticketId);
@@ -56,7 +56,7 @@ public class TicketController {
     }
     
     @GetMapping("/order/{orderId}")
-    public ResponseEntity<ApiResponse<List<TicketDto>>> getTicketsByOrder(@PathVariable UUID orderId) {
+    public ResponseEntity<ApiResponse<List<TicketDto>>> getTicketsByOrder(@PathVariable("orderId") UUID orderId) {
         logger.debug("Received request to get tickets for order: {}", orderId);
         
         List<TicketDto> tickets = ticketService.getTicketsByOrderId(orderId);
@@ -65,7 +65,7 @@ public class TicketController {
     }
     
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<List<TicketDto>>> getTicketsByUser(@PathVariable UUID userId) {
+    public ResponseEntity<ApiResponse<List<TicketDto>>> getTicketsByUser(@PathVariable("userId") UUID userId) {
         logger.debug("Received request to get tickets for user: {}", userId);
         
         List<TicketDto> tickets = ticketService.getTicketsByUserId(userId);
@@ -74,7 +74,7 @@ public class TicketController {
     }
     
     @PostMapping("/{ticketId}/cancel")
-    public ResponseEntity<ApiResponse<String>> cancelTicket(@PathVariable UUID ticketId) {
+    public ResponseEntity<ApiResponse<String>> cancelTicket(@PathVariable("ticketId") UUID ticketId) {
         logger.info("Received request to cancel ticket: {}", ticketId);
         
         ticketService.cancelTicket(ticketId);
