@@ -85,10 +85,10 @@ public class EventServiceImpl implements EventService {
         }
         
         Event savedEvent = eventRepository.save(event);
-        
+
         // Cache the event
         cacheService.cacheEvent(savedEvent);
-        
+
         return eventMapper.toDto(savedEvent);
     }
     

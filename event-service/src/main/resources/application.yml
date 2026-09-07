@@ -70,6 +70,10 @@ management:
       prometheus:
         enabled: true
 
+
+jwt:
+  secret: ${JWT_SECRET:mySecretKey}
+
 service:
   auth:
     secret: ${SERVICE_AUTH_SECRET:defaultServiceSecret123456789012345678901234567890}
