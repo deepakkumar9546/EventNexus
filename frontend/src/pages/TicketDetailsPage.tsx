@@ -72,34 +72,126 @@ const TicketDetailsPage = () => {
   };
 
   const handleDownload = async () => {
-    if (!ticketRef.current) return;
+  if (!ticketRef.current) return;
 
-    try {
-      // Use html2canvas to capture the ticket
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(ticketRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
+  try {
+    const html2canvas = (await import('html2canvas')).default;
 
-      // Convert to blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `ticket-${currentTicket?.ticketNumber}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
+    const ticket = ticketRef.current;
+
+    const canvas = await html2canvas(ticket, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+
+      onclone: (clonedDocument) => {
+        // Tailwind CSS v4 uses oklch() internally.
+        // html2canvas 1.4.1 does not support oklch().
+        // Remove external/generated styles from the cloned document.
+        clonedDocument
+          .querySelectorAll('style, link[rel="stylesheet"]')
+          .forEach((element) => element.remove());
+
+        const clonedTicket = clonedDocument.querySelector(
+          '[data-ticket-export="true"]'
+        ) as HTMLElement | null;
+
+        if (!clonedTicket) return;
+
+        // Basic ticket styling using only html2canvas-compatible colors.
+        clonedTicket.style.backgroundColor = '#ffffff';
+        clonedTicket.style.border = '2px solid #e5e7eb';
+        clonedTicket.style.borderRadius = '8px';
+        clonedTicket.style.overflow = 'hidden';
+        clonedTicket.style.boxShadow =
+          '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+
+        // Header
+        const header = clonedTicket.children[0] as HTMLElement;
+
+        if (header) {
+          header.style.background = '#1d4ed8';
+          header.style.backgroundImage = 'none';
+          header.style.color = '#ffffff';
+          header.style.padding = '24px';
         }
-      });
-    } catch (err) {
-      console.error('Error downloading ticket:', err);
-      alert('Failed to download ticket. Please try again.');
-    }
-  };
+
+        // Main body
+        const body = clonedTicket.children[1] as HTMLElement;
+
+        if (body) {
+          body.style.backgroundColor = '#ffffff';
+          body.style.padding = '24px';
+        }
+
+        // Footer
+        const footer = clonedTicket.children[2] as HTMLElement;
+
+        if (footer) {
+          footer.style.backgroundColor = '#f9fafb';
+          footer.style.borderTop = '1px solid #e5e7eb';
+          footer.style.padding = '16px 24px';
+        }
+
+        // Convert all text and borders to safe RGB/hex colors.
+        const elements = clonedTicket.querySelectorAll('*');
+
+        elements.forEach((element) => {
+          const el = element as HTMLElement;
+
+          el.style.color = el.style.color || '#111827';
+
+          if (el.tagName === 'P') {
+            el.style.color = '#374151';
+          }
+
+          if (el.tagName === 'H1') {
+            el.style.color = '#ffffff';
+          }
+
+          if (el.tagName === 'H3') {
+            el.style.color = '#6b7280';
+          }
+
+          if (el.tagName === 'SPAN') {
+            el.style.borderColor = '#e5e7eb';
+          }
+        });
+
+        // Keep the QR code area white.
+        const qrContainer = clonedTicket.querySelector(
+          '.border-4'
+        ) as HTMLElement | null;
+
+        if (qrContainer) {
+          qrContainer.style.backgroundColor = '#ffffff';
+          qrContainer.style.border = '4px solid #e5e7eb';
+        }
+      },
+    });
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        throw new Error('Failed to create ticket image');
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = `ticket-${currentTicket?.ticketNumber}.png`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+    }, 'image/png');
+  } catch (err) {
+    console.error('Error downloading ticket:', err);
+    alert('Failed to download ticket. Please try again.');
+  }
+};
+
 
   const handleShare = async () => {
     if (!currentTicket) return;
@@ -217,6 +309,7 @@ const TicketDetailsPage = () => {
         {/* Ticket Card */}
         <div
           ref={ticketRef}
+          data-ticket-export="true"
           className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-gray-200"
         >
           {/* Ticket Header */}
