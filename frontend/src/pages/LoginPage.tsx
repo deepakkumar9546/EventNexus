@@ -167,6 +167,7 @@ const LoginPage = () => {
               onBlur={() => handleBlur('password')}
               className={getInputClassName('password')}
               placeholder="Enter your password"
+              autoComplete="current-password"
             />
             {touched.password && validationErrors.password && (
               <p className="text-red-500 text-xs mt-1">{validationErrors.password}</p>
