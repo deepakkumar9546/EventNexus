@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchUserOrders, setPage } from '../store/slices/orderSlice';
 import type { RootState } from '../store/store';
-import { ticketService } from '../services/ticketService';
+import { ticketService, type Ticket } from '../services/ticketService';
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
@@ -16,6 +16,7 @@ const DashboardPage = () => {
 
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'past'>('all');
   const [totalTicketCount, setTotalTicketCount] = useState(0);
+  const [userTickets, setUserTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
     if (user?.id) {
@@ -32,10 +33,11 @@ const DashboardPage = () => {
   useEffect(() => {
   if (user?.id) {
     ticketService
-      .getTicketsByUserId(user.id)
-      .then((tickets) => {
-        setTotalTicketCount(tickets.length);
-      })
+    .getTicketsByUserId(user.id)
+    .then((tickets) => {
+      setUserTickets(tickets);
+      setTotalTicketCount(tickets.length);
+    })
       .catch(() => {
         setTotalTicketCount(0);
       });
@@ -73,11 +75,30 @@ const DashboardPage = () => {
   };
 
 
-  const getUpcomingOrders = () => {
-    return orders.filter(order => 
-      order.paymentStatus === 'COMPLETED' || order.paymentStatus === 'CONFIRMED'
-    );
-  };
+  const getUpcomingEvents = () => {
+  const now = new Date();
+
+  const upcomingEventIds = new Set(
+    userTickets
+      .filter(
+        (ticket) =>
+          ticket.status === 'ACTIVE' &&
+          ticket.eventDate &&
+          new Date(ticket.eventDate) > now
+      )
+      .map((ticket) => ticket.eventName || ticket.eventDate)
+  );
+
+  return upcomingEventIds.size;
+};
+
+const getUpcomingOrders = () => {
+  return orders.filter(
+    (order) =>
+      order.paymentStatus === 'COMPLETED' ||
+      order.paymentStatus === 'CONFIRMED'
+  );
+};
 
   const getPastOrders = () => {
     return orders.filter(order => 
@@ -117,7 +138,7 @@ const DashboardPage = () => {
         
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Upcoming Events</h3>
-          <p className="text-3xl font-bold text-blue-600">{getUpcomingOrders().length}</p>
+          <p className="text-3xl font-bold text-blue-600">{getUpcomingEvents()}</p>
         </div>
       </div>
       
