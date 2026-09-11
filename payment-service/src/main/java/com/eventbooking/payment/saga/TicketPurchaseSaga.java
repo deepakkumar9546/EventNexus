@@ -22,19 +22,23 @@ public class TicketPurchaseSaga {
     private final ProcessPaymentStep processPaymentStep;
     private final ConfirmOrderStep confirmOrderStep;
     private final SagaEventStore eventStore;
-    
+    private final GenerateTicketsStep generateTicketsStep;
+
     public TicketPurchaseSaga(
-            ValidateInventoryStep validateInventoryStep,
-            CreateOrderStep createOrderStep,
-            ProcessPaymentStep processPaymentStep,
-            ConfirmOrderStep confirmOrderStep,
-            SagaEventStore eventStore) {
-        this.validateInventoryStep = validateInventoryStep;
-        this.createOrderStep = createOrderStep;
-        this.processPaymentStep = processPaymentStep;
-        this.confirmOrderStep = confirmOrderStep;
-        this.eventStore = eventStore;
-    }
+        ValidateInventoryStep validateInventoryStep,
+        CreateOrderStep createOrderStep,
+        ProcessPaymentStep processPaymentStep,
+        ConfirmOrderStep confirmOrderStep,
+        GenerateTicketsStep generateTicketsStep,
+        SagaEventStore eventStore) {
+
+    this.validateInventoryStep = validateInventoryStep;
+    this.createOrderStep = createOrderStep;
+    this.processPaymentStep = processPaymentStep;
+    this.confirmOrderStep = confirmOrderStep;
+    this.generateTicketsStep = generateTicketsStep;
+    this.eventStore = eventStore;
+}
     
     /**
      * Execute the ticket purchase saga
@@ -45,11 +49,12 @@ public class TicketPurchaseSaga {
         logger.info("Starting ticket purchase saga (Saga ID: {})", context.getSagaId());
         
         List<SagaStep> steps = Arrays.asList(
-                validateInventoryStep,
-                createOrderStep,
-                processPaymentStep,
-                confirmOrderStep
-        );
+        validateInventoryStep,
+        createOrderStep,
+        processPaymentStep,
+        confirmOrderStep,
+        generateTicketsStep
+);
         
         SagaOrchestrator orchestrator = new SagaOrchestrator(steps, eventStore);
         boolean success = orchestrator.execute(context);

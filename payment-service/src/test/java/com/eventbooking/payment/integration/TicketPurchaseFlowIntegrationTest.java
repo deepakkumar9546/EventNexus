@@ -40,6 +40,10 @@ class TicketPurchaseFlowIntegrationTest {
     private PaymentService paymentService;
 
     private InMemorySagaEventStore eventStore;
+
+    @Mock
+    private GenerateTicketsStep generateTicketsStep;
+
     private TicketPurchaseSaga saga;
 
     @BeforeEach
@@ -50,14 +54,18 @@ class TicketPurchaseFlowIntegrationTest {
         CreateOrderStep createOrderStep = new CreateOrderStep(orderService);
         ProcessPaymentStep processPaymentStep = new ProcessPaymentStep(paymentService);
         ConfirmOrderStep confirmOrderStep = new ConfirmOrderStep(orderService);
+
+        when(generateTicketsStep.execute(any(SagaContext.class))).thenReturn(true);
+        when(generateTicketsStep.getStepName()).thenReturn("GenerateTickets");
         
-        saga = new TicketPurchaseSaga(
+       saga = new TicketPurchaseSaga(
                 validateInventoryStep,
                 createOrderStep,
                 processPaymentStep,
                 confirmOrderStep,
+                generateTicketsStep,
                 eventStore
-        );
+);
     }
 
     @Test
@@ -116,7 +124,16 @@ class TicketPurchaseFlowIntegrationTest {
         boolean result = saga.executePurchase(context);
 
         // Assert - Verify successful completion
-        assertTrue(result, "Saga should complete successfully");
+        //assertTrue(result, "Saga should complete successfully");
+        SagaExecutionSummary debugSummary = eventStore.getSagaSummary(context.getSagaId());
+
+        assertTrue(
+        result,
+        "Saga should complete successfully. " +
+        "Failed step: " + debugSummary.getFailedStep() +
+        ", error: " + context.getErrorMessage() +
+        ", completed steps: " + debugSummary.getCompletedSteps()
+        );
         assertEquals(SagaContext.SagaStatus.COMPLETED, context.getStatus());
         assertEquals(orderId, context.get("orderId", UUID.class));
         assertEquals(orderNumber, context.get("orderNumber", String.class));
@@ -126,7 +143,7 @@ class TicketPurchaseFlowIntegrationTest {
         SagaExecutionSummary summary = eventStore.getSagaSummary(context.getSagaId());
         assertNotNull(summary);
         assertEquals("COMPLETED", summary.getStatus());
-        assertEquals(4, summary.getCompletedSteps().size());
+        assertEquals(5, summary.getCompletedSteps().size());
         assertFalse(summary.isCompensated());
         assertNull(summary.getFailedStep());
         
@@ -135,6 +152,7 @@ class TicketPurchaseFlowIntegrationTest {
         assertTrue(summary.getCompletedSteps().contains("CreateOrder"));
         assertTrue(summary.getCompletedSteps().contains("ProcessPayment"));
         assertTrue(summary.getCompletedSteps().contains("ConfirmOrder"));
+        assertTrue(summary.getCompletedSteps().contains("GenerateTickets"));
         
         // Verify service interactions
         verify(orderService).createOrder(eq(userId), any(CreateOrderRequest.class));

@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
 /**
  * Integration tests for resilience patterns (circuit breaker, retry)
@@ -42,6 +43,7 @@ class ResilientServiceClientIntegrationTest {
                 .waitDurationInOpenState(Duration.ofMillis(1000))
                 .slidingWindowSize(5)
                 .minimumNumberOfCalls(3)
+                .permittedNumberOfCallsInHalfOpenState(1)
                 .build();
         
         circuitBreakerRegistry = CircuitBreakerRegistry.of(circuitBreakerConfig);
@@ -144,39 +146,44 @@ class ResilientServiceClientIntegrationTest {
         // Arrange
         String url = "http://test-service/api/data";
         CircuitBreaker circuitBreaker = circuitBreakerRegistry.circuitBreaker("testService");
-        
-        // Open the circuit
-        for (int i = 0; i < 5; i++) {
-            mockServer.expect(requestTo(url))
-                    .andRespond(withServerError());
+
+        // The first call makes 3 retry attempts and opens the circuit.
+        mockServer.expect(requestTo(url))
+                .andRespond(withServerError());
+        mockServer.expect(requestTo(url))
+                .andRespond(withServerError());
+        mockServer.expect(requestTo(url))
+                .andRespond(withServerError());
+
+        // This expectation will be used by the half-open call after the wait duration.
+        mockServer.expect(requestTo(url))
+                .andRespond(withSuccess("Success", org.springframework.http.MediaType.TEXT_PLAIN));
+
+        // Act - Open the circuit
+        try {
+            testClient.callService(url);
+        } catch (Exception e) {
+            // Expected failure
         }
-        
-        for (int i = 0; i < 5; i++) {
-            try {
-                testClient.callService(url);
-            } catch (Exception e) {
-                // Expected
-            }
-        }
-        
+
         assertEquals(CircuitBreaker.State.OPEN, circuitBreaker.getState());
-        
+
         // Wait for circuit to transition to half-open
         try {
             Thread.sleep(1100);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            fail("Test interrupted while waiting for circuit breaker");
         }
-        
+
         // Act - Next call should be allowed in half-open state
-        mockServer.expect(requestTo(url))
-                .andRespond(withSuccess("Success", org.springframework.http.MediaType.TEXT_PLAIN));
-        
         String result = testClient.callService(url);
 
         // Assert
         assertEquals("Success", result);
         assertEquals(CircuitBreaker.State.CLOSED, circuitBreaker.getState());
+
+        mockServer.verify();
     }
 
     @Test
@@ -274,10 +281,16 @@ class ResilientServiceClientIntegrationTest {
         }
         
         public String callServiceWithTimeout(String url, long timeoutMs) {
+            SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+            requestFactory.setConnectTimeout((int) timeoutMs);
+            requestFactory.setReadTimeout((int) timeoutMs);
+
+            restTemplate.setRequestFactory(requestFactory);
+
             return executeWithResilience(() -> {
                 restTemplate.getForObject(url, String.class);
                 return "Success";
             });
-        }
+}
     }
 }

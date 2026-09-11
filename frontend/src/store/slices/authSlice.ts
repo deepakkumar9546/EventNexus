@@ -1,5 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { authService, LoginRequest, RegisterRequest, VerifyEmailRequest, ForgotPasswordRequest, ResetPasswordRequest } from '../../services/authService';
+import {
+  authService,
+  LoginRequest,
+  RegisterRequest,
+  VerifyEmailRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+} from '../../services/authService';
 import { ApiException } from '../../services/api';
 
 interface User {
@@ -19,10 +26,13 @@ interface AuthState {
   successMessage: string | null;
 }
 
+const storedToken = localStorage.getItem('token');
+const storedUser = localStorage.getItem('user');
+
 const initialState: AuthState = {
-  user: null,
-  token: localStorage.getItem('token'),
-  isAuthenticated: !!localStorage.getItem('token'),
+  user: storedUser ? JSON.parse(storedUser) : null,
+  token: storedToken,
+  isAuthenticated: !!storedToken,
   loading: false,
   error: null,
   successMessage: null,
@@ -84,7 +94,9 @@ export const forgotPassword = createAsyncThunk(
       if (error instanceof ApiException) {
         return rejectWithValue(error.error.message);
       }
-      return rejectWithValue('Password reset request failed. Please try again.');
+      return rejectWithValue(
+        'Password reset request failed. Please try again.'
+      );
     }
   }
 );
@@ -172,7 +184,9 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = action.payload.user;
         state.token = action.payload.accessToken;
+
         localStorage.setItem('token', action.payload.accessToken);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -235,7 +249,9 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
         state.error = null;
         state.successMessage = null;
+
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
       });
 
     // Refresh Token
@@ -248,10 +264,14 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
         state.isAuthenticated = false;
+
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
       });
   },
 });
 
-export const { clearError, clearSuccessMessage, setToken } = authSlice.actions;
+export const { clearError, clearSuccessMessage, setToken } =
+  authSlice.actions;
+
 export default authSlice.reducer;

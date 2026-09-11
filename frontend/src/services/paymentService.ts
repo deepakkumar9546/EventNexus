@@ -49,6 +49,7 @@ export interface TicketPurchaseRequest {
   quantity: number;
   unitPrice: number;
   paymentMethodId: string;
+  holderName?: string;
   reservationId?: string;
 }
 
@@ -70,58 +71,96 @@ export interface PaymentResponse {
 }
 
 export const paymentService = {
-  // Create an order
   async createOrder(request: CreateOrderRequest): Promise<Order> {
-    return apiRequest<Order>('/payments/orders', {
+    const response = await apiRequest<{ data: Order }>('/payments/orders', {
       method: 'POST',
       body: JSON.stringify(request),
     });
+
+    return response.data;
   },
 
-  // Get order by ID
   async getOrderById(orderId: string): Promise<Order> {
-    return apiRequest<Order>(`/payments/orders/${orderId}`);
+    const response = await apiRequest<{ data: Order }>(
+      `/payments/orders/${orderId}`
+    );
+
+    return response.data;
   },
 
-  // Get order by order number
   async getOrderByNumber(orderNumber: string): Promise<Order> {
-    return apiRequest<Order>(`/payments/orders/number/${orderNumber}`);
+    const response = await apiRequest<{ data: Order }>(
+      `/payments/orders/number/${orderNumber}`
+    );
+
+    return response.data;
   },
 
-  // Get user orders with pagination
-  async getUserOrders(userId: string, page: number = 0, size: number = 10): Promise<{
+  async getUserOrders(
+    userId: string,
+    page: number = 0,
+    size: number = 10
+  ): Promise<{
     content: Order[];
     totalElements: number;
     totalPages: number;
     size: number;
     number: number;
   }> {
-    return apiRequest(`/payments/orders/user/${userId}?page=${page}&size=${size}`);
+    const response = await apiRequest<{
+      data: {
+        content: Order[];
+        totalElements: number;
+        totalPages: number;
+        size: number;
+        number: number;
+      };
+    }>(`/payments/orders/user/${userId}?page=${page}&size=${size}`);
+
+    return response.data;
   },
 
-  // Purchase tickets using saga pattern
-  async purchaseTickets(request: TicketPurchaseRequest): Promise<TicketPurchaseResponse> {
-    return apiRequest<TicketPurchaseResponse>('/payments/purchase-tickets', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+  async purchaseTickets(
+    request: TicketPurchaseRequest,
+    userId: string
+  ): Promise<TicketPurchaseResponse> {
+    const response = await apiRequest<{ data: TicketPurchaseResponse }>(
+      '/payments/purchase-tickets',
+      {
+        method: 'POST',
+        headers: {
+          'X-User-Id': userId,
+        },
+        body: JSON.stringify(request),
+      }
+    );
+
+    return response.data;
   },
 
-  // Cancel order
   async cancelOrder(orderId: string): Promise<Order> {
-    return apiRequest<Order>(`/payments/orders/${orderId}/cancel`, {
-      method: 'POST',
-    });
+    const response = await apiRequest<{ data: Order }>(
+      `/payments/orders/${orderId}/cancel`,
+      {
+        method: 'POST',
+      }
+    );
+
+    return response.data;
   },
 
-  // Confirm order
-  async confirmOrder(orderId: string, paymentIntentId?: string): Promise<Order> {
-    const url = paymentIntentId 
+  async confirmOrder(
+    orderId: string,
+    paymentIntentId?: string
+  ): Promise<Order> {
+    const url = paymentIntentId
       ? `/payments/orders/${orderId}/confirm?paymentIntentId=${paymentIntentId}`
       : `/payments/orders/${orderId}/confirm`;
-    
-    return apiRequest<Order>(url, {
+
+    const response = await apiRequest<{ data: Order }>(url, {
       method: 'POST',
     });
+
+    return response.data;
   },
 };

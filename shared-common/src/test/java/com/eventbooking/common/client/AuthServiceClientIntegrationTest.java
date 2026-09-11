@@ -21,7 +21,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.*;
-
+import org.springframework.test.util.ReflectionTestUtils;
+import io.github.resilience4j.retry.RetryConfig;
+import java.time.Duration;
 /**
  * Integration tests for AuthServiceClient testing synchronous API calls
  */
@@ -39,9 +41,25 @@ class AuthServiceClientIntegrationTest {
         objectMapper = new ObjectMapper();
 
         CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.ofDefaults();
-        RetryRegistry retryRegistry = RetryRegistry.ofDefaults();
+
+            RetryConfig retryConfig = RetryConfig.custom()
+            .maxAttempts(3)
+            .waitDuration(Duration.ofMillis(100))
+            .retryOnException(throwable ->
+                    throwable instanceof java.net.ConnectException
+                            || throwable instanceof java.net.SocketTimeoutException
+                            || throwable instanceof org.springframework.web.client.ResourceAccessException)
+            .build();
+
+        RetryRegistry retryRegistry = RetryRegistry.of(retryConfig);
 
         authServiceClient = new AuthServiceClient(restTemplate, circuitBreakerRegistry, retryRegistry);
+
+        ReflectionTestUtils.setField(
+                            authServiceClient,
+                            "authServiceUrl",
+                            authServiceUrl
+                    );
     }
 
     @Test

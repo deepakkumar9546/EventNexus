@@ -8,11 +8,13 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 
 /**
  * Health indicator for database connectivity and performance
  */
 @Component
+@ConditionalOnBean(DataSource.class)
 public class DatabaseHealthIndicator implements HealthIndicator {
 
     private final DataSource dataSource;

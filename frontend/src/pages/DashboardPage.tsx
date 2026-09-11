@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchUserOrders, setPage } from '../store/slices/orderSlice';
 import type { RootState } from '../store/store';
+import { ticketService } from '../services/ticketService';
 
 const DashboardPage = () => {
   const dispatch = useAppDispatch();
@@ -14,6 +15,7 @@ const DashboardPage = () => {
   const orders = orderList ?? [];
 
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [totalTicketCount, setTotalTicketCount] = useState(0);
 
   useEffect(() => {
     if (user?.id) {
@@ -26,6 +28,19 @@ const DashboardPage = () => {
       );
     }
   }, [user?.id, pagination.page, pagination.size, dispatch]);
+
+  useEffect(() => {
+  if (user?.id) {
+    ticketService
+      .getTicketsByUserId(user.id)
+      .then((tickets) => {
+        setTotalTicketCount(tickets.length);
+      })
+      .catch(() => {
+        setTotalTicketCount(0);
+      });
+  }
+}, [user?.id]);
 
   const handlePageChange = (newPage: number) => {
     dispatch(setPage(newPage));
@@ -57,14 +72,6 @@ const DashboardPage = () => {
     }
   };
 
-  const getTotalTickets = () => {
-    return orders.reduce((total, order) => {
-      return total + (order.orderItems ?? []).reduce(
-        (sum, item) => sum + item.quantity,
-        0
-      );
-    }, 0);
-  };
 
   const getUpcomingOrders = () => {
     return orders.filter(order => 
@@ -105,7 +112,7 @@ const DashboardPage = () => {
         
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-2">Total Tickets</h3>
-          <p className="text-3xl font-bold text-blue-600">{getTotalTickets()}</p>
+          <p className="text-3xl font-bold text-blue-600">{totalTicketCount}</p>
         </div>
         
         <div className="bg-white rounded-lg shadow-md p-6">
@@ -136,7 +143,7 @@ const DashboardPage = () => {
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            All Orders ({orders.length})
+            All Orders ({pagination.totalElements})
           </button>
           <button
             onClick={() => setActiveTab('upcoming')}
@@ -215,16 +222,16 @@ const DashboardPage = () => {
                   {(order.orderItems ?? []).map((item) => (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="text-gray-700">
-                        {item.quantity} × Ticket (${item.unitPrice.toFixed(2)})
+                        {item.quantity} × Ticket (₹{item.unitPrice.toFixed(2)})
                       </span>
-                      <span className="font-medium">${item.totalPrice.toFixed(2)}</span>
+                      <span className="font-medium">₹{item.totalPrice.toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
 
                 <div className="flex justify-between items-center pt-3 border-t">
                   <div className="text-lg font-bold">
-                    Total: ${order.totalAmount.toFixed(2)} {order.currency}
+                    Total: ₹{order.totalAmount.toFixed(2)} {order.currency}
                   </div>
                   <div className="flex gap-3">
                     <Link

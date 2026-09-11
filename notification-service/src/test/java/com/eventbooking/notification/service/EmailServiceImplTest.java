@@ -14,6 +14,9 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import jakarta.mail.internet.MimeMessage;
+import com.eventbooking.notification.repository.NotificationRepository;
+import com.eventbooking.notification.repository.DeliveryStatusRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.UUID;
 
@@ -24,11 +27,17 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class EmailServiceImplTest {
 
-    @Mock
+   @Mock
     private JavaMailSender mailSender;
+
+    @Mock
+    private NotificationRepository notificationRepository;
 
     @InjectMocks
     private EmailServiceImpl emailService;
+
+    @Mock
+    private DeliveryStatusRepository deliveryStatusRepository;
 
     private Notification notification;
     private NotificationTemplate template;
@@ -50,6 +59,9 @@ class EmailServiceImplTest {
         notification.setTextContent("Thank you for your order");
         notification.setChannel(NotificationChannel.EMAIL);
         notification.setStatus(NotificationStatus.PENDING);
+        when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
+
+        ReflectionTestUtils.setField(emailService, "fromEmail", "test@example.com");
 
         mimeMessage = mock(MimeMessage.class);
     }

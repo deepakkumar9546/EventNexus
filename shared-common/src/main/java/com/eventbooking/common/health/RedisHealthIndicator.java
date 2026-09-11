@@ -2,6 +2,7 @@ package com.eventbooking.common.health;
 
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
  * Health indicator for Redis connectivity and performance
  */
 @Component
+@ConditionalOnBean(RedisConnectionFactory.class)
 public class RedisHealthIndicator implements HealthIndicator {
 
     private final RedisConnectionFactory redisConnectionFactory;
@@ -22,11 +24,11 @@ public class RedisHealthIndicator implements HealthIndicator {
     public Health health() {
         try {
             long startTime = System.currentTimeMillis();
-            
+
             RedisConnection connection = redisConnectionFactory.getConnection();
             String pong = connection.ping();
             connection.close();
-            
+
             long responseTime = System.currentTimeMillis() - startTime;
 
             Health.Builder healthBuilder = Health.up()
@@ -44,7 +46,7 @@ public class RedisHealthIndicator implements HealthIndicator {
             }
 
             return healthBuilder.build();
-            
+
         } catch (Exception e) {
             return Health.down()
                 .withDetail("error", e.getMessage())

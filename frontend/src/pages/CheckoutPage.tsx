@@ -76,7 +76,7 @@ const CheckoutPage = () => {
   };
 
   const calculateServiceFee = () => {
-    return calculateSubtotal() * 0.05; // 5% service fee
+    return calculateSubtotal() * 0.10; // 10% service fee
   };
 
   const calculateTax = () => {
@@ -160,15 +160,25 @@ const CheckoutPage = () => {
 
       // Process each ticket type separately (simplified for MVP)
       // In production, you might want to batch these or use the order creation endpoint
+
+      if (!user?.id) {
+        throw new Error('User information is missing. Please log in again.');
+}
       for (const item of checkoutData.selectedTickets) {
-        await dispatch(purchaseTickets({
-          eventId: checkoutData.eventId,
-          ticketTypeId: item.ticketType.id,
-          quantity: item.quantity,
-          unitPrice: item.ticketType.price,
-          paymentMethodId,
-        })).unwrap();
-      }
+            await dispatch(
+              purchaseTickets({
+                request: {
+                  eventId: checkoutData.eventId,
+                  ticketTypeId: item.ticketType.id,
+                  quantity: item.quantity,
+                  unitPrice: item.ticketType.price,
+                  paymentMethodId,
+                  holderName: `${firstName} ${lastName}`.trim(),
+                },
+                userId: user.id,
+              })
+            ).unwrap();
+          }
     } catch (err) {
       console.error('Payment failed:', err);
       setProcessingPayment(false);
@@ -386,7 +396,7 @@ const CheckoutPage = () => {
                     Processing Payment...
                   </span>
                 ) : (
-                  `Pay $${calculateTotal().toFixed(2)}`
+                  `Pay ₹${calculateTotal().toFixed(2)}`
                 )}
               </button>
             </form>
@@ -403,11 +413,11 @@ const CheckoutPage = () => {
                     <div className="flex-1">
                       <p className="font-medium">{item.ticketType.name}</p>
                       <p className="text-sm text-gray-600">
-                        ${item.ticketType.price.toFixed(2)} × {item.quantity}
+                        ₹{item.ticketType.price.toFixed(2)} × {item.quantity}
                       </p>
                     </div>
                     <p className="font-semibold">
-                      ${(item.ticketType.price * item.quantity).toFixed(2)}
+                      ₹{(item.ticketType.price * item.quantity).toFixed(2)}
                     </p>
                   </div>
                 ))}
@@ -416,19 +426,19 @@ const CheckoutPage = () => {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between text-gray-700">
                   <span>Subtotal ({getTotalTickets()} tickets)</span>
-                  <span>${calculateSubtotal().toFixed(2)}</span>
+                  <span>₹{calculateSubtotal().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Service Fee</span>
-                  <span>${calculateServiceFee().toFixed(2)}</span>
+                  <span>₹{calculateServiceFee().toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-gray-700">
                   <span>Tax</span>
-                  <span>${calculateTax().toFixed(2)}</span>
+                  <span>₹{calculateTax().toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-2 flex justify-between items-center text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-blue-600">${calculateTotal().toFixed(2)}</span>
+                  <span className="text-blue-600">₹{calculateTotal().toFixed(2)}</span>
                 </div>
               </div>
 

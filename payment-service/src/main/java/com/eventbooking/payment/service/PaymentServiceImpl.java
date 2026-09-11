@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -33,6 +34,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
     private final PaymentEventPublisher eventPublisher;
+
+    @Value("${payment.gateway:mock}")
+    private String paymentGateway;
     
     @Override
     @Transactional
@@ -55,11 +59,15 @@ public class PaymentServiceImpl implements PaymentService {
             throw new InvalidOrderException("Order has expired");
         }
         
-        // Update order status to processing
+       // Update order status to processing
         order.setPaymentStatus(PaymentStatus.PROCESSING);
         order.setPaymentMethod("card");
         orderRepository.save(order);
-        
+
+        if ("mock".equalsIgnoreCase(paymentGateway)) {
+            return processMockPayment(order);
+        }
+
         try {
             // Create Stripe Payment Intent
             PaymentIntent paymentIntent = createPaymentIntent(order, request);
@@ -405,4 +413,38 @@ public class PaymentServiceImpl implements PaymentService {
             default -> "Your card was declined. Please try a different payment method or contact your bank.";
         };
     }
+
+    private PaymentResponse processMockPayment(Order order) {
+    UUID transactionId = UUID.randomUUID();
+    String paymentIntentId = "mock_pi_" + UUID.randomUUID();
+
+    PaymentTransaction transaction = PaymentTransaction.builder()
+            .id(transactionId)
+            .order(order)
+            .paymentIntentId(paymentIntentId)
+            .amount(order.getTotalAmount())
+            .currency(order.getCurrency())
+            .status("succeeded")
+            .paymentMethod("card")
+            .build();
+
+    transactionRepository.save(transaction);
+
+    log.info(
+            "Mock payment succeeded for order: {} with transaction: {}",
+            order.getId(),
+            transactionId
+    );
+
+    return PaymentResponse.builder()
+            .transactionId(transactionId)
+            .orderId(order.getId())
+            .status("succeeded")
+            .amount(order.getTotalAmount())
+            .currency(order.getCurrency())
+            .paymentIntentId(paymentIntentId)
+            .requiresAction(false)
+            .build();
+}
+
 }

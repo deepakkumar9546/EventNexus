@@ -1,62 +1,30 @@
 package com.eventbooking.common.dto;
 
-import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class EventDto {
+
     private UUID id;
-    
-    @NotNull(message = "Organizer ID is required")
     private UUID organizerId;
-    
-    @NotBlank(message = "Event name is required")
     private String name;
-    
     private String description;
-    
-    @NotNull(message = "Event date is required")
-    @Future(message = "Event date must be in the future")
     private LocalDateTime eventDate;
-    
-    @NotBlank(message = "Venue name is required")
-    private String venueName;
-    
-    @NotBlank(message = "Venue address is required")
-    private String venueAddress;
-    
-    private String category;
+    private VenueDto venue;
+    private CategoryDto category;
     private String imageUrl;
     private String status;
+    private Integer maxCapacity;
+    private BigDecimal minPrice;
+    private BigDecimal maxPrice;
+    private List<String> tags;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // Default constructor
     public EventDto() {}
 
-    // Constructor with all fields
-    public EventDto(UUID id, UUID organizerId, String name, String description,
-                    LocalDateTime eventDate, String venueName, String venueAddress,
-                    String category, String imageUrl, String status,
-                    LocalDateTime createdAt, LocalDateTime updatedAt) {
-        this.id = id;
-        this.organizerId = organizerId;
-        this.name = name;
-        this.description = description;
-        this.eventDate = eventDate;
-        this.venueName = venueName;
-        this.venueAddress = venueAddress;
-        this.category = category;
-        this.imageUrl = imageUrl;
-        this.status = status;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
-
-    // Getters and setters
     public UUID getId() {
         return id;
     }
@@ -97,27 +65,19 @@ public class EventDto {
         this.eventDate = eventDate;
     }
 
-    public String getVenueName() {
-        return venueName;
+    public VenueDto getVenue() {
+        return venue;
     }
 
-    public void setVenueName(String venueName) {
-        this.venueName = venueName;
+    public void setVenue(VenueDto venue) {
+        this.venue = venue;
     }
 
-    public String getVenueAddress() {
-        return venueAddress;
-    }
-
-    public void setVenueAddress(String venueAddress) {
-        this.venueAddress = venueAddress;
-    }
-
-    public String getCategory() {
+    public CategoryDto getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(CategoryDto category) {
         this.category = category;
     }
 
@@ -135,6 +95,38 @@ public class EventDto {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Integer getMaxCapacity() {
+        return maxCapacity;
+    }
+
+    public void setMaxCapacity(Integer maxCapacity) {
+        this.maxCapacity = maxCapacity;
+    }
+
+    public BigDecimal getMinPrice() {
+        return minPrice;
+    }
+
+    public void setMinPrice(BigDecimal minPrice) {
+        this.minPrice = minPrice;
+    }
+
+    public BigDecimal getMaxPrice() {
+        return maxPrice;
+    }
+
+    public void setMaxPrice(BigDecimal maxPrice) {
+        this.maxPrice = maxPrice;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 
     public LocalDateTime getCreatedAt() {

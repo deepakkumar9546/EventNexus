@@ -31,6 +31,9 @@ class TicketPurchaseSagaTest {
     
     @Mock
     private PaymentService paymentService;
+
+    @Mock
+    private GenerateTicketsStep generateTicketsStep;
     
     private InMemorySagaEventStore eventStore;
     private TicketPurchaseSaga saga;
@@ -43,14 +46,17 @@ class TicketPurchaseSagaTest {
         CreateOrderStep createOrderStep = new CreateOrderStep(orderService);
         ProcessPaymentStep processPaymentStep = new ProcessPaymentStep(paymentService);
         ConfirmOrderStep confirmOrderStep = new ConfirmOrderStep(orderService);
+
+        when(generateTicketsStep.execute(any(SagaContext.class))).thenReturn(true);
         
         saga = new TicketPurchaseSaga(
                 validateInventoryStep,
                 createOrderStep,
                 processPaymentStep,
                 confirmOrderStep,
+                generateTicketsStep,
                 eventStore
-        );
+);
     }
     
     @Test
@@ -108,13 +114,14 @@ class TicketPurchaseSagaTest {
         SagaExecutionSummary summary = eventStore.getSagaSummary(context.getSagaId());
         assertNotNull(summary);
         assertEquals("COMPLETED", summary.getStatus());
-        assertEquals(4, summary.getCompletedSteps().size());
+        assertEquals(5, summary.getCompletedSteps().size());
         assertFalse(summary.isCompensated());
         
         // Verify service calls
         verify(orderService).createOrder(eq(userId), any(CreateOrderRequest.class));
         verify(paymentService).processPayment(any());
         verify(orderService).confirmOrder(eq(orderId), eq(userId), eq("pi_123"));
+        verify(generateTicketsStep).execute(any(SagaContext.class));
     }
     
     @Test

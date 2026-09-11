@@ -7,6 +7,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "tickets", indexes = {
     @Index(name = "idx_ticket_order_id", columnList = "order_id"),
+    @Index(name = "idx_ticket_user_id", columnList = "user_id"),
     @Index(name = "idx_ticket_type_id", columnList = "ticket_type_id"),
     @Index(name = "idx_ticket_number", columnList = "ticket_number", unique = true),
     @Index(name = "idx_ticket_qr_code", columnList = "qr_code", unique = true),
@@ -27,11 +28,14 @@ public class Ticket {
     @Column(name = "ticket_number", nullable = false, unique = true, length = 50)
     private String ticketNumber;
     
-    @Column(name = "qr_code", nullable = false, unique = true)
+    @Column(name = "qr_code", nullable = false, unique = true, columnDefinition = "TEXT")
     private String qrCode;
     
     @Column(name = "holder_name", length = 255)
     private String holderName;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -73,6 +77,14 @@ public class Ticket {
     
     public UUID getOrderId() {
         return orderId;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
     }
     
     public void setOrderId(UUID orderId) {

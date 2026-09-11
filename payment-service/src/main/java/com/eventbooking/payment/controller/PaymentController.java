@@ -89,6 +89,7 @@ public class PaymentController {
         context.put("unitPrice", request.getUnitPrice());
         context.put("paymentMethodId", request.getPaymentMethodId());
         context.put("reservationId", request.getReservationId());
+        context.put("holderName", request.getHolderName());
         
         // Execute saga
         boolean success = ticketPurchaseSaga.executePurchase(context);
@@ -98,7 +99,7 @@ public class PaymentController {
                     .sagaId(context.getSagaId())
                     .orderId(context.get("orderId", UUID.class))
                     .orderNumber(context.get("orderNumber", String.class))
-                    .transactionId(context.get("transactionId", String.class))
+                    .transactionId(context.get("transactionId", UUID.class).toString())
                     .status("SUCCESS")
                     .message("Ticket purchase completed successfully")
                     .build();

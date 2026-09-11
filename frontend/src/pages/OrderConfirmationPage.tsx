@@ -129,13 +129,13 @@ const OrderConfirmationPage = () => {
                   <div className="flex-1">
                     <p className="font-medium">Ticket Type ID: {item.ticketTypeId}</p>
                     <p className="text-sm text-gray-600">
-                      Quantity: {item.quantity} × ${item.unitPrice.toFixed(2)}
+                      Quantity: {item.quantity} × {"\u20B9"}{item.unitPrice.toFixed(2)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold">${item.totalPrice.toFixed(2)}</p>
+                   <p className="font-semibold">₹{item.totalPrice.toFixed(2)}</p>
                     <p className="text-xs text-gray-500">
-                      (incl. ${item.fees.toFixed(2)} fees)
+                     (incl. ₹{item.fees.toFixed(2)} fees)
                     </p>
                   </div>
                 </div>
@@ -148,20 +148,20 @@ const OrderConfirmationPage = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-gray-700">
                 <span>Subtotal</span>
-                <span>${currentOrder.subtotalAmount.toFixed(2)}</span>
+                <span>₹{currentOrder.subtotalAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Service Fee</span>
-                <span>${currentOrder.serviceFee.toFixed(2)}</span>
+                <span>₹{currentOrder.serviceFee.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-700">
                 <span>Tax</span>
-                <span>${currentOrder.taxAmount.toFixed(2)}</span>
+                <span>₹{currentOrder.taxAmount.toFixed(2)}</span>
               </div>
               <div className="border-t pt-2 flex justify-between items-center text-lg font-bold">
                 <span>Total</span>
                 <span className="text-blue-600">
-                  ${currentOrder.totalAmount.toFixed(2)} {currentOrder.currency}
+                  ₹{currentOrder.totalAmount.toFixed(2)} {currentOrder.currency}
                 </span>
               </div>
             </div>

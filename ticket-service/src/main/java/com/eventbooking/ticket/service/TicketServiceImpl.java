@@ -21,6 +21,12 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.eventbooking.common.client.EventServiceClient;
+import com.eventbooking.common.dto.EventDto;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 @Service
 public class TicketServiceImpl implements TicketService {
     
@@ -32,17 +38,20 @@ public class TicketServiceImpl implements TicketService {
     private final TicketMapper ticketMapper;
     private final QRCodeService qrCodeService;
     private final TicketEventPublisher eventPublisher;
+    private final EventServiceClient eventServiceClient;
     
-    public TicketServiceImpl(TicketRepository ticketRepository,
-                            TicketTypeRepository ticketTypeRepository,
-                            TicketMapper ticketMapper,
-                            QRCodeService qrCodeService,
-                            TicketEventPublisher eventPublisher) {
+   public TicketServiceImpl(TicketRepository ticketRepository,
+                         TicketTypeRepository ticketTypeRepository,
+                         TicketMapper ticketMapper,
+                         QRCodeService qrCodeService,
+                         TicketEventPublisher eventPublisher,
+                         EventServiceClient eventServiceClient) {
         this.ticketRepository = ticketRepository;
         this.ticketTypeRepository = ticketTypeRepository;
         this.ticketMapper = ticketMapper;
         this.qrCodeService = qrCodeService;
         this.eventPublisher = eventPublisher;
+        this.eventServiceClient = eventServiceClient;
     }
 
     @Override
@@ -62,22 +71,23 @@ public class TicketServiceImpl implements TicketService {
             ticket.setTicketTypeId(request.getTicketTypeId());
             ticket.setOrderId(request.getOrderId());
             ticket.setHolderName(request.getHolderName());
+            ticket.setUserId(request.getUserId());
             ticket.setStatus(Ticket.TicketStatus.ACTIVE);
-            
-            // Generate unique ticket number
+
             String ticketNumber = generateUniqueTicketNumber(ticketType.getEventId());
             ticket.setTicketNumber(ticketNumber);
-            
-            // Save ticket first to get the ID
-            ticket = ticketRepository.save(ticket);
-            
-            // Generate QR code with ticket ID and number
+
+            // Generate the ID before saving so the QR code can be generated
+            // without inserting a ticket with a null qr_code.
+            UUID ticketId = UUID.randomUUID();
+            ticket.setId(ticketId);
+
             String qrCode = qrCodeService.generateQRCode(
-                    ticket.getId().toString(), 
-                    ticket.getTicketNumber());
+                    ticketId.toString(),
+                    ticketNumber);
+
             ticket.setQrCode(qrCode);
-            
-            // Update ticket with QR code
+
             ticket = ticketRepository.save(ticket);
             
             generatedTickets.add(ticketMapper.toDto(ticket));
@@ -102,13 +112,14 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TicketDto getTicketById(UUID ticketId) {
         logger.debug("Retrieving ticket by ID: {}", ticketId);
         
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new TicketNotFoundException("Ticket not found: " + ticketId));
         
-        return ticketMapper.toDto(ticket);
+        return enrichTickets(List.of(ticket)).get(0);
     }
     
     @Override
@@ -121,26 +132,32 @@ public class TicketServiceImpl implements TicketService {
         return ticketMapper.toDto(ticket);
     }
     
-    @Override
+   @Override
+    @Transactional(readOnly = true)
     public List<TicketDto> getTicketsByOrderId(UUID orderId) {
         logger.debug("Retrieving tickets for order: {}", orderId);
-        
+
         List<Ticket> tickets = ticketRepository.findByOrderId(orderId);
-        
-        return tickets.stream()
-                .map(ticketMapper::toDto)
-                .collect(Collectors.toList());
+
+        if (tickets.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return enrichTickets(tickets);
     }
     
-    @Override
+   @Override
+    @Transactional(readOnly = true)
     public List<TicketDto> getTicketsByUserId(UUID userId) {
         logger.debug("Retrieving tickets for user: {}", userId);
-        
-        // Note: This would typically involve calling the Payment Service to get user's orders
-        // For now, we'll return an empty list as this requires inter-service communication
-        // This will be implemented when Payment Service integration is complete
-        logger.warn("getTicketsByUserId requires Payment Service integration - returning empty list");
-        return new ArrayList<>();
+
+        List<Ticket> tickets = ticketRepository.findByUserId(userId);
+
+        if (tickets.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return enrichTickets(tickets);
     }
 
     @Override
@@ -181,6 +198,55 @@ public class TicketServiceImpl implements TicketService {
         }
         
         return ticketMapper.toDto(ticket);
+    }
+
+    private List<TicketDto> enrichTickets(List<Ticket> tickets) {
+        Map<UUID, TicketType> ticketTypes = ticketTypeRepository
+                .findAllById(
+                        tickets.stream()
+                                .map(Ticket::getTicketTypeId)
+                                .distinct()
+                                .collect(Collectors.toList())
+                )
+                .stream()
+                .collect(Collectors.toMap(TicketType::getId, Function.identity()));
+
+        List<UUID> eventIds = ticketTypes.values().stream()
+                .map(TicketType::getEventId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<UUID, EventDto> events = eventServiceClient.getEventsByIds(eventIds)
+                .stream()
+                .collect(Collectors.toMap(EventDto::getId, Function.identity()));
+
+        return tickets.stream()
+                .map(ticket -> {
+                    TicketDto dto = ticketMapper.toDto(ticket);
+
+                    TicketType ticketType = ticketTypes.get(ticket.getTicketTypeId());
+
+                    if (ticketType != null) {
+                        dto.setTicketTypeName(ticketType.getName());
+                        dto.setVenueZone(ticketType.getVenueZone());
+
+                        EventDto event = events.get(ticketType.getEventId());
+
+                        if (event != null) {
+                            dto.setEventName(event.getName());
+
+                            if (event.getEventDate() != null) {
+                                dto.setEventDate(event.getEventDate().toString());
+                            }
+
+                            dto.setVenueName(event.getVenue() != null ? event.getVenue().getName() : null);
+                            dto.setVenueAddress(event.getVenue() != null ? event.getVenue().getAddress() : null);
+                        }
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     /**

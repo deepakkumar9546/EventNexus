@@ -18,13 +18,15 @@ public class InputSanitizer {
     
     private static final Pattern ALPHANUMERIC_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
     
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^\\+?[1-9]\\d{1,14}$");
-    
-    // Dangerous patterns that should be blocked
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^\\+?[1-9]\\d{6,14}$");
+
+
     private static final Pattern SQL_INJECTION_PATTERN = Pattern.compile(
-        "('.+--)|(--)|(;)|(\\|\\|)|(\\*)|(<script>)|(</script>)|(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)",
+        "('.+--)|(--)|(;)|(\\|\\|)|(\\*)|(<script>)|(</script>)|" +
+        "(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|EXECUTE)" +
+        "|(\\bOR\\b\\s+['\\\"]?\\w+['\\\"]?\\s*=\\s*['\\\"]?\\w+['\\\"]?)",
         Pattern.CASE_INSENSITIVE
-    );
+);
     
     private static final Pattern XSS_PATTERN = Pattern.compile(
         "(<script>)|(</script>)|(<iframe>)|(</iframe>)|(javascript:)|(onerror=)|(onload=)|(onclick=)",

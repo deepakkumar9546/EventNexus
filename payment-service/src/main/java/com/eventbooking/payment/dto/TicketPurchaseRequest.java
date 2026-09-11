@@ -36,4 +36,6 @@ public class TicketPurchaseRequest {
     private String paymentMethodId;
     
     private UUID reservationId;
+
+    private String holderName;
 }

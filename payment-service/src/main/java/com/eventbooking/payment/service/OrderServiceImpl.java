@@ -66,7 +66,7 @@ public class OrderServiceImpl implements OrderService {
                 .taxAmount(taxAmount)
                 .totalAmount(totalAmount)
                 .paymentStatus(PaymentStatus.PENDING)
-                .currency("USD")
+                .currency("INR")
                 .reservationId(request.getReservationId())
                 .expiresAt(Instant.now().plus(ORDER_EXPIRY_MINUTES, ChronoUnit.MINUTES))
                 .build();

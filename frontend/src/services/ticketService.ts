@@ -29,36 +29,62 @@ export interface Ticket {
 export const ticketService = {
   // Get ticket by ID
   async getTicketById(ticketId: string): Promise<Ticket> {
-    return apiRequest<Ticket>(`/tickets/${ticketId}`);
+    const response = await apiRequest<{ data: Ticket }>(
+      `/tickets/${ticketId}`
+    );
+
+    return response.data;
   },
 
   // Get ticket by ticket number
   async getTicketByNumber(ticketNumber: string): Promise<Ticket> {
-    return apiRequest<Ticket>(`/tickets/number/${ticketNumber}`);
+    const response = await apiRequest<{ data: Ticket }>(
+      `/tickets/number/${ticketNumber}`
+    );
+
+    return response.data;
   },
 
   // Get tickets by order ID
   async getTicketsByOrderId(orderId: string): Promise<Ticket[]> {
-    return apiRequest<Ticket[]>(`/tickets/order/${orderId}`);
+    const response = await apiRequest<{ data: Ticket[] }>(
+      `/tickets/order/${orderId}`
+    );
+
+    return response.data;
   },
 
   // Get all tickets for a user
   async getTicketsByUserId(userId: string): Promise<Ticket[]> {
-    return apiRequest<Ticket[]>(`/tickets/user/${userId}`);
+    const response = await apiRequest<{ data: Ticket[] }>(
+      `/tickets/user/${userId}`
+    );
+
+    return response.data;
   },
 
   // Cancel a ticket
   async cancelTicket(ticketId: string): Promise<string> {
-    return apiRequest<string>(`/tickets/${ticketId}/cancel`, {
-      method: 'POST',
-    });
+    const response = await apiRequest<{ data: string }>(
+      `/tickets/${ticketId}/cancel`,
+      {
+        method: 'POST',
+      }
+    );
+
+    return response.data;
   },
 
   // Validate a ticket
   async validateTicket(qrCode: string): Promise<Ticket> {
-    return apiRequest<Ticket>('/tickets/validate', {
-      method: 'POST',
-      body: JSON.stringify(qrCode),
-    });
+    const response = await apiRequest<{ data: Ticket }>(
+      '/tickets/validate',
+      {
+        method: 'POST',
+        body: JSON.stringify(qrCode),
+      }
+    );
+
+    return response.data;
   },
 };

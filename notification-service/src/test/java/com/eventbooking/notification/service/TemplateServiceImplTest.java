@@ -178,12 +178,12 @@ class TemplateServiceImplTest {
 
     @Test
     void deleteTemplate_Success() {
-        when(templateRepository.findById(templateId)).thenReturn(Optional.of(template));
-        doNothing().when(templateRepository).delete(template);
+        when(templateRepository.existsById(templateId)).thenReturn(true);
+        doNothing().when(templateRepository).deleteById(templateId);
 
         templateService.deleteTemplate(templateId);
 
-        verify(templateRepository).findById(templateId);
-        verify(templateRepository).delete(template);
-    }
+        verify(templateRepository).existsById(templateId);
+        verify(templateRepository).deleteById(templateId);
+}
 }

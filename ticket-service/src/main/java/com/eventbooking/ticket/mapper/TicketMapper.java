@@ -6,12 +6,12 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TicketMapper {
-    
+
     public TicketDto toDto(Ticket ticket) {
         if (ticket == null) {
             return null;
         }
-        
+
         TicketDto dto = new TicketDto();
         dto.setId(ticket.getId());
         dto.setTicketTypeId(ticket.getTicketTypeId());
@@ -22,15 +22,15 @@ public class TicketMapper {
         dto.setStatus(ticket.getStatus());
         dto.setCreatedAt(ticket.getCreatedAt());
         dto.setUpdatedAt(ticket.getUpdatedAt());
-        
+
         return dto;
     }
-    
+
     public Ticket toEntity(TicketDto dto) {
         if (dto == null) {
             return null;
         }
-        
+
         Ticket ticket = new Ticket();
         ticket.setId(dto.getId());
         ticket.setTicketTypeId(dto.getTicketTypeId());
@@ -39,7 +39,7 @@ public class TicketMapper {
         ticket.setQrCode(dto.getQrCode());
         ticket.setHolderName(dto.getHolderName());
         ticket.setStatus(dto.getStatus());
-        
+
         return ticket;
     }
 }

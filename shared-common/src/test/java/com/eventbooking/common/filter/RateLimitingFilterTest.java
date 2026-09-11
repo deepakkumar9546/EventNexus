@@ -38,7 +38,6 @@ class RateLimitingFilterTest {
     void setUp() throws Exception {
         rateLimitingFilter = new RateLimitingFilter();
         responseWriter = new StringWriter();
-        when(response.getWriter()).thenReturn(new PrintWriter(responseWriter));
     }
     
     @Test
@@ -61,6 +60,7 @@ class RateLimitingFilterTest {
         // Given - Auth endpoints have strict limit of 5 requests per minute
         when(request.getRequestURI()).thenReturn("/api/auth/login");
         when(request.getRemoteAddr()).thenReturn("192.168.1.2");
+        when(response.getWriter()).thenReturn(new PrintWriter(responseWriter));
         
         // When - Make 6 requests rapidly
         for (int i = 0; i < 6; i++) {
@@ -113,7 +113,6 @@ class RateLimitingFilterTest {
         // Given - Authenticated user
         when(request.getRequestURI()).thenReturn("/api/events");
         when(request.getAttribute("userId")).thenReturn("user-123");
-        when(request.getRemoteAddr()).thenReturn("192.168.1.6");
         
         // When
         rateLimitingFilter.doFilterInternal(request, response, filterChain);
@@ -127,7 +126,6 @@ class RateLimitingFilterTest {
         // Given - Request through proxy
         when(request.getRequestURI()).thenReturn("/api/events");
         when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.1, 198.51.100.1");
-        when(request.getRemoteAddr()).thenReturn("192.168.1.7");
         
         // When
         rateLimitingFilter.doFilterInternal(request, response, filterChain);

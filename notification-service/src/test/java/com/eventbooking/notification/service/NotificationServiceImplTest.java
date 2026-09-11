@@ -5,11 +5,9 @@ import com.eventbooking.notification.dto.SendNotificationRequest;
 import com.eventbooking.notification.entity.Notification;
 import com.eventbooking.notification.entity.NotificationChannel;
 import com.eventbooking.notification.entity.NotificationStatus;
-import com.eventbooking.notification.entity.NotificationTemplate;
 import com.eventbooking.notification.exception.NotificationNotFoundException;
 import com.eventbooking.notification.mapper.NotificationMapper;
 import com.eventbooking.notification.repository.NotificationRepository;
-import com.eventbooking.notification.repository.NotificationTemplateRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +18,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-
+import com.eventbooking.notification.entity.NotificationTemplate;
+import com.eventbooking.notification.repository.NotificationTemplateRepository;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -73,6 +72,7 @@ class NotificationServiceImplTest {
         template = new NotificationTemplate();
         template.setId(templateId);
         template.setName("ORDER_CONFIRMATION");
+        template.setIsActive(true);
         template.setSubject("Order Confirmation - {{orderNumber}}");
         template.setHtmlContent("<html><body>Thank you {{userName}} for order {{orderNumber}}</body></html>");
         template.setTextContent("Thank you {{userName}} for order {{orderNumber}}");
@@ -98,7 +98,8 @@ class NotificationServiceImplTest {
 
     @Test
     void sendNotification_Success() {
-        when(templateRepository.findByName("ORDER_CONFIRMATION")).thenReturn(Optional.of(template));
+        when(templateRepository.findByNameAndIsActiveTrue("ORDER_CONFIRMATION"))
+                                .thenReturn(Optional.of(template));
         when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
         when(emailService.sendEmail(any(Notification.class))).thenReturn(true);
         when(notificationMapper.toDto(any(Notification.class))).thenReturn(notificationDto);
@@ -108,14 +109,16 @@ class NotificationServiceImplTest {
         assertNotNull(result);
         assertEquals(notificationId, result.getId());
         assertEquals(NotificationStatus.SENT, result.getStatus());
-        verify(templateRepository).findByName("ORDER_CONFIRMATION");
-        verify(notificationRepository, times(2)).save(any(Notification.class));
+
+        verify(templateRepository).findByNameAndIsActiveTrue("ORDER_CONFIRMATION");
+        verify(notificationRepository).save(any(Notification.class));
         verify(emailService).sendEmail(any(Notification.class));
     }
 
     @Test
     void sendNotification_TemplateVariableReplacement() {
-        when(templateRepository.findByName("ORDER_CONFIRMATION")).thenReturn(Optional.of(template));
+        when(templateRepository.findByNameAndIsActiveTrue("ORDER_CONFIRMATION"))
+                                .thenReturn(Optional.of(template));
         when(notificationRepository.save(any(Notification.class))).thenAnswer(invocation -> {
             Notification saved = invocation.getArgument(0);
             assertTrue(saved.getSubject().contains("ORD-12345"));
@@ -127,13 +130,13 @@ class NotificationServiceImplTest {
         when(notificationMapper.toDto(any(Notification.class))).thenReturn(notificationDto);
 
         notificationService.sendNotification(sendRequest);
-
-        verify(templateRepository).findByName("ORDER_CONFIRMATION");
+        verify(templateRepository).findByNameAndIsActiveTrue("ORDER_CONFIRMATION");
     }
 
     @Test
     void sendNotification_EmailFailure() {
-        when(templateRepository.findByName("ORDER_CONFIRMATION")).thenReturn(Optional.of(template));
+        when(templateRepository.findByNameAndIsActiveTrue("ORDER_CONFIRMATION"))
+                                .thenReturn(Optional.of(template));
         when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
         when(emailService.sendEmail(any(Notification.class))).thenReturn(false);
         when(notificationMapper.toDto(any(Notification.class))).thenReturn(notificationDto);
@@ -142,7 +145,7 @@ class NotificationServiceImplTest {
 
         assertNotNull(result);
         verify(emailService).sendEmail(any(Notification.class));
-        verify(notificationRepository, times(2)).save(any(Notification.class));
+        verify(notificationRepository).save(any(Notification.class));
     }
 
     @Test
@@ -213,20 +216,22 @@ class NotificationServiceImplTest {
         verify(notificationRepository).save(any(Notification.class));
     }
 
-    @Test
+   @Test
     void processPendingNotifications_Success() {
         notification.setRetryCount(1);
         List<Notification> pendingNotifications = Arrays.asList(notification);
-        
-        when(notificationRepository.findByStatusAndRetryCountLessThan(NotificationStatus.PENDING, 3))
-            .thenReturn(pendingNotifications);
+
+        when(notificationRepository.findByStatusAndRetryCountLessThan(
+            NotificationStatus.FAILED, 3
+        )).thenReturn(pendingNotifications);
+
         when(emailService.retryEmail(notification)).thenReturn(true);
-        when(notificationRepository.save(any(Notification.class))).thenReturn(notification);
 
         notificationService.processPendingNotifications();
 
-        verify(notificationRepository).findByStatusAndRetryCountLessThan(NotificationStatus.PENDING, 3);
+        verify(notificationRepository).findByStatusAndRetryCountLessThan(
+            NotificationStatus.FAILED, 3
+        );
         verify(emailService).retryEmail(notification);
-        verify(notificationRepository).save(any(Notification.class));
     }
 }

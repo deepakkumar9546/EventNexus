@@ -11,11 +11,16 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
+import com.eventbooking.common.dto.CategoryDto;
+import com.eventbooking.common.dto.VenueDto;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import io.github.resilience4j.retry.RetryConfig;
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
@@ -39,9 +44,25 @@ class EventServiceClientIntegrationTest {
         objectMapper.registerModule(new JavaTimeModule());
 
         CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.ofDefaults();
-        RetryRegistry retryRegistry = RetryRegistry.ofDefaults();
+        RetryConfig retryConfig = RetryConfig.custom()
+        .maxAttempts(3)
+        .waitDuration(Duration.ofMillis(100))
+        .retryOnException(throwable ->
+                throwable instanceof java.net.ConnectException
+                        || throwable instanceof java.net.SocketTimeoutException
+                        || throwable instanceof org.springframework.web.client.ResourceAccessException)
+        .build();
+
+        RetryRegistry retryRegistry = RetryRegistry.of(retryConfig);
+
 
         eventServiceClient = new EventServiceClient(restTemplate, circuitBreakerRegistry, retryRegistry);
+
+        ReflectionTestUtils.setField(
+                            eventServiceClient,
+                            "eventServiceUrl",
+                            eventServiceUrl
+                        );
     }
 
     @Test
@@ -56,9 +77,15 @@ class EventServiceClientIntegrationTest {
         expectedEvent.setName("Test Event");
         expectedEvent.setDescription("Test Description");
         expectedEvent.setEventDate(LocalDateTime.now().plusDays(7));
-        expectedEvent.setVenueName("Test Venue");
-        expectedEvent.setVenueAddress("123 Test St");
-        expectedEvent.setCategory("MUSIC");
+        VenueDto venue = new VenueDto();
+        venue.setName("Test Venue");
+        venue.setAddress("Test Address");
+
+        CategoryDto category = new CategoryDto();
+        category.setName("Test Category");
+
+        expectedEvent.setVenue(venue);
+        expectedEvent.setCategory(category);
         expectedEvent.setStatus("PUBLISHED");
 
         mockServer.expect(requestTo(eventServiceUrl + "/api/events/internal/" + eventId))

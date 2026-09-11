@@ -254,7 +254,7 @@ const EventDetailsPage = () => {
                             </div>
                             <div className="text-right ml-4">
                               <p className="text-xl font-bold text-blue-600">
-                                ${ticketType.price.toFixed(2)}
+                                {"\u20B9"}{ticketType.price.toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -307,7 +307,7 @@ const EventDetailsPage = () => {
                         <div className="flex justify-between items-center mb-4">
                           <span className="font-semibold">Total ({getTotalTickets()} tickets)</span>
                           <span className="text-2xl font-bold text-blue-600">
-                            ${getTotalPrice().toFixed(2)}
+                            ₹{getTotalPrice().toFixed(2)}
                           </span>
                         </div>
                         <button

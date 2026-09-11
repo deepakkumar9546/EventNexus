@@ -15,6 +15,9 @@ public class GenerateTicketsRequest {
     private Integer quantity;
     
     private String holderName;
+
+    @NotNull(message = "User ID is required")
+    private UUID userId;
     
     // Getters and Setters
     public UUID getOrderId() {
@@ -32,7 +35,13 @@ public class GenerateTicketsRequest {
     public void setTicketTypeId(UUID ticketTypeId) {
         this.ticketTypeId = ticketTypeId;
     }
-    
+
+    public UUID getUserId() {
+        return userId;
+    }
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
     public Integer getQuantity() {
         return quantity;
     }

@@ -78,7 +78,7 @@ services:
   auth:
     url: ${AUTH_SERVICE_URL:http://localhost:8080}
   event:
-    url: ${EVENT_SERVICE_URL:http://localhost:8081}
+    url: ${EVENT_SERVICE_URL:http://localhost:8092}
   payment:
     url: ${PAYMENT_SERVICE_URL:http://localhost:8083}
   notification:
@@ -149,7 +149,7 @@ services:
   auth:
     url: http://auth-service:8080
   event:
-    url: http://event-service:8081
+    url: http://event-service:8080
   payment:
     url: http://payment-service:8083
   notification:

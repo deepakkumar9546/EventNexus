@@ -1,5 +1,6 @@
 package com.eventbooking.ticket.service;
 
+import com.eventbooking.common.client.EventServiceClient;
 import com.eventbooking.ticket.dto.GenerateTicketsRequest;
 import com.eventbooking.ticket.dto.TicketDto;
 import com.eventbooking.ticket.entity.Ticket;
@@ -43,6 +44,9 @@ class TicketServiceImplTest {
 
     @Mock
     private TicketEventPublisher eventPublisher;
+
+    @Mock
+    private EventServiceClient eventServiceClient;
 
     @InjectMocks
     private TicketServiceImpl ticketService;
@@ -111,7 +115,7 @@ class TicketServiceImplTest {
         assertNotNull(result);
         assertEquals(3, result.size());
         verify(ticketTypeRepository).findById(ticketTypeId);
-        verify(ticketRepository, times(6)).save(any(Ticket.class)); // 2 saves per ticket (before and after QR)
+        verify(ticketRepository, times(3)).save(any(Ticket.class));
         verify(qrCodeService, times(3)).generateQRCode(anyString(), anyString());
     }
 
@@ -161,6 +165,10 @@ class TicketServiceImplTest {
     void getTicketById_WithValidId_ShouldReturnTicket() {
         when(ticketRepository.findById(ticketId)).thenReturn(Optional.of(testTicket));
         when(ticketMapper.toDto(testTicket)).thenReturn(testTicketDto);
+        when(ticketTypeRepository.findAllById(anyList()))
+                .thenReturn(List.of(testTicketType));
+        when(eventServiceClient.getEventsByIds(anyList()))
+                .thenReturn(List.of());
 
         TicketDto result = ticketService.getTicketById(ticketId);
 
@@ -206,6 +214,10 @@ class TicketServiceImplTest {
         List<Ticket> tickets = Arrays.asList(testTicket);
         when(ticketRepository.findByOrderId(orderId)).thenReturn(tickets);
         when(ticketMapper.toDto(testTicket)).thenReturn(testTicketDto);
+        when(ticketTypeRepository.findAllById(anyList()))
+                .thenReturn(List.of(testTicketType));
+        when(eventServiceClient.getEventsByIds(anyList()))
+                .thenReturn(List.of());
 
         List<TicketDto> result = ticketService.getTicketsByOrderId(orderId);
 

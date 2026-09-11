@@ -28,14 +28,17 @@ public class ResilienceConfig {
     }
 
     @Bean
-    public RetryRegistry retryRegistry() {
-        RetryConfig defaultConfig = RetryConfig.custom()
+        public RetryRegistry retryRegistry() {
+            RetryConfig defaultConfig = RetryConfig.custom()
                 .maxAttempts(3)
                 .waitDuration(Duration.ofMillis(500))
-                .retryExceptions(
-                        java.net.ConnectException.class,
-                        java.net.SocketTimeoutException.class,
-                        org.springframework.web.client.ResourceAccessException.class
+                .retryOnException(throwable ->
+                        !(throwable instanceof org.springframework.web.client.HttpClientErrorException)
+                                && (
+                                throwable instanceof java.net.ConnectException
+                                        || throwable instanceof java.net.SocketTimeoutException
+                                        || throwable instanceof org.springframework.web.client.ResourceAccessException
+                        )
                 )
                 .build();
 

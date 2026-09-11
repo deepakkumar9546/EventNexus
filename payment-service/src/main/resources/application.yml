@@ -26,6 +26,9 @@ spring:
     name: payment-service
   config:
     import: optional:classpath:application-monitoring.yml
+
+payment:
+  gateway: ${PAYMENT_GATEWAY:mock}
   
   datasource:
     url: jdbc:postgresql://localhost:5435/payment_service
@@ -67,9 +70,9 @@ services:
   auth:
     url: ${AUTH_SERVICE_URL:http://localhost:8080}
   event:
-    url: ${EVENT_SERVICE_URL:http://localhost:8081}
+    url: ${EVENT_SERVICE_URL:http://localhost:8092}
   ticket:
-    url: ${TICKET_SERVICE_URL:http://localhost:8082}
+    url: ${TICKET_SERVICE_URL:http://localhost:8093}
   notification:
     url: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
 
@@ -151,8 +154,8 @@ services:
   auth:
     url: http://auth-service:8080
   event:
-    url: http://event-service:8081
+    url: http://event-service:8080
   ticket:
-    url: http://ticket-service:8082
+    url: http://ticket-service:8080
   notification:
     url: http://notification-service:8084

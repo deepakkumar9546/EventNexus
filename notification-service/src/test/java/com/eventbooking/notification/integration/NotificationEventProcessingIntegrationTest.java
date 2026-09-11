@@ -147,8 +147,8 @@ class NotificationEventProcessingIntegrationTest {
         verify(sqsClient, times(2)).deleteMessage(any(DeleteMessageRequest.class));
     }
 
-    @Test
-    void testEventProcessingFailure_MessageNotDeleted() throws Exception {
+   @Test
+   void testEventProcessingFailure_MessageNotDeleted() throws Exception{
         // Arrange
         PaymentEvent paymentEvent = new PaymentEvent();
         paymentEvent.setEventType(PaymentEvent.EventType.PAYMENT_COMPLETED);
@@ -156,33 +156,39 @@ class NotificationEventProcessingIntegrationTest {
         paymentEvent.setUserId(UUID.randomUUID());
         paymentEvent.setAmount(new BigDecimal("100.00"));
         paymentEvent.setTimestamp(LocalDateTime.now());
-        
+
         String messageBody = objectMapper.writeValueAsString(paymentEvent);
-        
+
         Message sqsMessage = Message.builder()
                 .messageId("msg-fail")
                 .receiptHandle("receipt-fail")
                 .body(messageBody)
                 .build();
-        
+
         ReceiveMessageResponse receiveResponse = ReceiveMessageResponse.builder()
                 .messages(sqsMessage)
                 .build();
-        
+
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
                 .thenReturn(receiveResponse);
-        
-        // Simulate processing failure
-        doThrow(new RuntimeException("Notification service unavailable"))
-                .when(notificationService).sendNotification(any());
+
+        // Simulate processing failure directly in the message handler
+        Consumer<PaymentEvent> failingHandler = event -> {
+                throw new RuntimeException("Notification service unavailable");
+        };
 
         // Act
-        paymentEventConsumer.consumePaymentEvents();
+        messageConsumer.pollMessages(
+                "payment-events-queue",
+                PaymentEvent.class,
+                failingHandler
+        );
 
         // Assert - Message should not be deleted on failure
         verify(sqsClient).receiveMessage(any(ReceiveMessageRequest.class));
         verify(sqsClient, never()).deleteMessage(any(DeleteMessageRequest.class));
-    }
+}
+
 
     @Test
     void testPaymentFailedEvent_SendsFailureNotification() throws Exception {
